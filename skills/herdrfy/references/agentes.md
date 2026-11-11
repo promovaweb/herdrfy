@@ -107,8 +107,9 @@ herdr agent start <nome> --kind opencode --pane <painel> -- --auto
 
 ## Diálogo de confiança da pasta
 
-Numa pasta que o agente nunca abriu, Claude Code e Codex param numa pergunta
-de confiança antes de qualquer tarefa, mesmo com as flags de permissão. O
+Numa pasta que o agente nunca abriu, Claude Code e Codex podem parar numa
+pergunta de confiança antes de qualquer tarefa, mesmo com as flags de
+permissão. Numa pasta já aceita antes, eles sobem direto. O
 herdr-core não recebe status nesse momento: `hc get <t>` mostra `status`
 vazio e `hc wait <t>` volta por tempo esgotado.
 

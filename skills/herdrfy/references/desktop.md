@@ -137,6 +137,11 @@ que saem em texto. `--json` força JSON em qualquer caso.
 
 ## Esperas e seus retornos
 
+No JSON da espera, `ended: true` diz que a condição da espera foi atingida,
+não que o terminal encerrou. Um agente parado em `idle` devolve
+`ended: true` com o terminal vivo. O estado do terminal está em
+`hc get <t>`, campo `state`.
+
 - `reason: timeout` (padrão de 180 segundos): aviso de tempo, não falha.
   Espere de novo.
 - `reason: message`: chegou mensagem para você. Ela entra como a sua próxima

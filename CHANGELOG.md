@@ -3,6 +3,17 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.1.3](https://github.com/promovaweb/herdrfy/compare/v0.1.2...v0.1.3) (2026-11-11)
+
+### Correções
+
+- A confirmação do início da tarefa deixa de falar em "tela vazia": um agente recém-aberto pode mostrar o campo de entrada vazio antes de a tarefa do comando aparecer. O reenvio agora exige duas esperas seguidas sem a tarefa na tela.
+- O diálogo de confiança da pasta passa a ser descrito como possível, não certo: numa pasta já aceita, Claude Code e Codex sobem direto.
+
+### Documentação
+
+- Explica o campo `ended` do `hc wait`, a equivalência entre `~/.agents/skills/herdrfy` e os links nas pastas dos agentes, e a frase que dispensa o agente auxiliar de carregar skill em tarefa pequena.
+
 ## [0.1.2](https://github.com/promovaweb/herdrfy/compare/v0.1.1...v0.1.2) (2026-11-11)
 
 ### Documentação

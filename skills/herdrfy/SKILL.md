@@ -36,7 +36,10 @@ TUI. Eles acompanham a versão instalada e valem mais que esta skill quando
 houver diferença de sintaxe.
 
 Os scripts ficam em `scripts/`, ao lado deste arquivo, e rodam com Node.js 18
-ou mais novo. Nos exemplos, `<skill>` é a pasta desta skill.
+ou mais novo. Nos exemplos, `<skill>` é a pasta desta skill. Numa instalação
+feita pelo `npx skills`, `~/.agents/skills/herdrfy` e os links nas pastas
+dos agentes, como `~/.claude/skills/herdrfy`, levam aos mesmos arquivos;
+qualquer um serve.
 
 ## Regras
 
@@ -161,16 +164,20 @@ hc read revisor
 
 Leia o retorno assim:
 
-- `idle` com `turn: 0` e tela vazia logo depois do lançamento: o agente
-  ainda está subindo. Espere de novo e releia. Não reenvie nada.
+- `idle` com `turn: 0` e tela sem a tarefa logo depois do lançamento: o
+  agente ainda está subindo, mesmo que já mostre o campo de entrada vazio.
+  A tarefa passada no comando leva alguns segundos para aparecer. Espere de
+  novo e releia. Não reenvie nada.
 - Status vazio depois da espera: costuma ser o diálogo de confiança da
   pasta. Responda conforme a regra 9 (`hc keys revisor down enter` no Claude
   Code, `hc keys revisor enter` no Codex), espere de novo e leia a tela.
 - Tarefa visível na tela, com o agente em `working` ou já com resposta: a
   tarefa começou.
 
-Só reenvie a tarefa quando o agente estiver parado, com o campo de entrada
-vazio, e a tela não mostrar a tarefa nem a resposta.
+Só reenvie a tarefa depois de pelo menos duas esperas seguidas com o agente
+parado, o campo de entrada vazio e a tela sem a tarefa nem a resposta. Em
+painel estreito a tarefa aparece cortada; o começo dela na tela já prova que
+chegou.
 
 No TUI, `agent start` devolve `agent_not_ready` quando o agente para num
 diálogo: leia com `herdr agent read`, responda com `herdr agent send-keys` e

@@ -24,6 +24,10 @@ O agente que você abre só conhece o que está na tarefa. Escreva:
    para respostas longas.
 6. **Aviso de fim**: no Desktop, `hc send <seu-endereço> "<resultado>"` ao
    terminar ou travar. No TUI, você espera com `agent wait` e lê a tela.
+7. **Dispensa do Herdr**, em tarefa pequena: diga que o único comando do
+   Herdr necessário é o `hc send` do aviso e que não é preciso carregar
+   skill nem se localizar. Sem essa frase, um agente com instruções globais
+   de Herdr gasta o começo do turno lendo manual.
 
 Exemplo para o Desktop:
 
@@ -33,6 +37,7 @@ Somente leitura: não edite arquivos e não abra outros agentes.
 Já conferi os testes de unidade; o foco é o cálculo de parcelas.
 Grave os achados em /tmp/revisao-pagamentos.md, com arquivo, linha e motivo.
 Ao terminar ou travar, rode: hc send t1s "revisão pronta em /tmp/revisao-pagamentos.md"
+Esse hc send é o único comando do Herdr que você precisa; não carregue skill para isso.
 ```
 
 ## Ciclo no Desktop
@@ -95,7 +100,7 @@ com `herdr agent wait revisor --timeout <ms>`.
 
 | Sinal | O que fazer |
 | --- | --- |
-| `idle` com `turn: 0` e tela vazia logo depois do lançamento | o agente ainda sobe; espere de novo e releia, sem reenviar |
+| `idle` com `turn: 0` e tela sem a tarefa logo depois do lançamento | o agente ainda sobe; espere de novo e releia, sem reenviar |
 | Status vazio logo depois do lançamento | leia a tela; se for o diálogo de confiança da pasta do pedido, aceite |
 | Espera voltou com `reason: message` | é o aviso de um filho; trate e espere de novo até `idle` ou `done` |
 | `blocked` | leia a tela e leve a pergunta à pessoa; não responda por ela |
