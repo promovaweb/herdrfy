@@ -27,7 +27,16 @@ npx skills add promovaweb/herdrfy --skill herdrfy -g
 ```
 
 `-g` instala para todos os seus projetos. Sem `-g`, a skill entra só no
-projeto atual. Para atualizar, rode o mesmo comando de novo.
+projeto atual. O instalador pergunta para quais agentes instalar. Para
+responder no próprio comando, liste os agentes com `-a`:
+
+```bash
+npx skills add promovaweb/herdrfy --skill herdrfy -g -a claude-code -a codex -a opencode -y
+```
+
+Não use `-y` sem `-a`: o instalador cria a skill na pasta de todos os
+agentes que ele conhece, mesmo os que você não tem. Para atualizar, rode o
+mesmo comando de novo.
 
 Requisitos: Node.js 18 ou mais novo (para os scripts da skill) e ao menos um
 dos produtos do Herdr instalado. A skill também orienta a instalação deles.

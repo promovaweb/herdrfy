@@ -41,7 +41,18 @@ npx skills add herdrdev/herdr-core --skill herdr-core -g
 ```
 
 `-g` instala para todos os projetos da pessoa. Sem `-g`, a skill entra só no
-projeto atual. Para atualizar, rode o mesmo comando de novo. Instale a
+projeto atual. Para atualizar, rode o mesmo comando de novo.
+
+Sem terminal interativo, o instalador precisa de `-y`. Nesse caso passe
+sempre os agentes com `-a`, um por agente presente na máquina:
+
+```bash
+npx skills add promovaweb/herdrfy --skill herdrfy -g -a claude-code -a codex -a opencode -y
+```
+
+`-y` sem `-a` instala a skill na pasta de todos os agentes que o instalador
+conhece, dezenas deles, e cria essas pastas na pasta pessoal. Para desfazer:
+`npx skills remove <skill> -g -y` e instale de novo com `-a`. Instale a
 oficial de cada produto que existe na máquina; o Herdrfy funciona sem elas,
 porque lê o manual embutido nos binários.
 
