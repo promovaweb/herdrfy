@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publicar GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validar
+        run: npm run validate
+
+      - name: Conferir a versão da tag
+        run: |
+          versao="$(node -p "require('./package.json').version")"
+          test "v${versao}" = "${GITHUB_REF_NAME}" || { echo "Tag ${GITHUB_REF_NAME} difere de package.json (${versao})"; exit 1; }
+
+      - name: Extrair notas do changelog
+        run: |
+          versao="${GITHUB_REF_NAME#v}"
+          awk -v v="$versao" '
+            $0 ~ "^## \\[" v "\\]" { imprimir = 1; next }
+            /^## \[/ { if (imprimir) exit }
+            imprimir { print }
+          ' CHANGELOG.md > notas.md
+          test -s notas.md || echo "Release ${GITHUB_REF_NAME}." > notas.md
+
+      - name: Publicar GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: notas.md
