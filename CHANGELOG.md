@@ -3,6 +3,12 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.1.1](https://github.com/promovaweb/herdrfy/compare/v0.1.0...v0.1.1) (2026-11-11)
+
+### Correções
+
+- `npm run validate` e `npm test` passam a apontar os arquivos de teste (`tests/*.test.mjs`). No Node.js 22, `node --test tests/` tratava a pasta como módulo e os workflows `CI` e `Release` falhavam. A 0.1.0 ficou sem GitHub Release por esse motivo; o conteúdo da skill é o mesmo.
+
 ## [0.1.0](https://github.com/promovaweb/herdrfy/releases/tag/v0.1.0) (2026-11-11)
 
 ### Funcionalidades

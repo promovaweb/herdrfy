@@ -1,14 +1,14 @@
 {
   "name": "herdrfy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Skill da Promovaweb que orquestra o Herdr e os agentes de código no Herdr TUI e no Herdr Desktop.",
   "type": "module",
   "private": true,
   "license": "MIT",
   "scripts": {
-    "validate": "node scripts/validar.mjs && node --test tests/",
+    "validate": "node scripts/validar.mjs && node --test tests/*.test.mjs",
     "skills:validate": "node scripts/validar.mjs",
-    "test": "node --test tests/",
+    "test": "node --test tests/*.test.mjs",
     "onde": "node skills/herdrfy/scripts/onde.mjs",
     "diagnostico": "node skills/herdrfy/scripts/diagnostico.mjs"
   },
