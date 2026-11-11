@@ -12,11 +12,10 @@ produto de superfície.
 
 ## Informe a sua
 
-Diga no pedido: "estou no TUI" ou "estou no Desktop". Essa frase define
-quais comandos o agente usa.
-
-Se você não disser, o agente tenta detectar pelo ambiente do terminal. Na
-dúvida, ele pergunta uma vez e guarda a resposta pelo resto da sessão.
+O agente detecta a superfície pelo ambiente do terminal. Você pode dizer no
+pedido "estou no TUI" ou "estou no Desktop": a sua frase vale mais que a
+detecção. Quando a detecção falha ou contraria o pedido, ele pergunta uma vez
+e guarda a resposta pelo resto da sessão.
 
 ## Por que informar
 
@@ -25,6 +24,17 @@ acontece, por exemplo, quando o herdr-core foi iniciado de dentro de um
 painel do Herdr TUI: os terminais novos herdam as variáveis antigas. O
 agente trata `HC_TERMINAL_ID` como sinal mais forte, mas a sua informação
 vale mais que qualquer detecção.
+
+## Terminal aberto fora da janela
+
+Um terminal do herdr-core pode nascer fora da janela do Desktop: pelo
+aplicativo móvel, por `hc run` num servidor ou como auxiliar de outro
+agente. Esse terminal não pertence a uma aba da janela, mesmo quando aparece
+com um nome de espaço e aba.
+
+Nesse caso não existe "a mesma aba" para o Herdrfy repetir. O que o agente
+abrir fica como auxiliar, acessível pelo endereço, e ele avisa você disso.
+Para ver o auxiliar numa aba, peça uma aba nova.
 
 ## Janela em outro computador
 

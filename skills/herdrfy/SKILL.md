@@ -1,6 +1,6 @@
 ---
 name: herdrfy
-description: Orquestra o Herdr e os agentes de código nas duas superfícies, Herdr TUI (comando herdr) e Herdr Desktop com herdr-core (comandos hc e herdr-app). Use quando a pessoa pedir para configurar o Herdr, localizar o agente nas janelas, abrir painéis, abas, espaços ou workspaces, iniciar agentes Claude Code, Codex ou OpenCode com as permissões liberadas, enviar tarefas, ler a tela de outro agente, esperar resultados, limpar terminais ou gravar as instruções do Herdr no AGENTS.md e no CLAUDE.md.
+description: Orquestra o Herdr e os agentes de código nas duas superfícies, Herdr TUI (comando herdr) e Herdr Desktop com herdr-core (comandos hc e herdr-app). Use quando a pessoa pedir para configurar o Herdr, localizar o agente nas janelas, abrir painéis, abas, espaços ou workspaces, iniciar agentes Claude Code, Codex ou OpenCode com as permissões liberadas, enviar tarefas, ler a tela de outro agente, esperar resultados, rodar comandos demorados ou em outra máquina pelo herdr-core, limpar terminais ou gravar as instruções do Herdr no AGENTS.md e no CLAUDE.md.
 ---
 
 # Herdrfy
@@ -23,9 +23,10 @@ Leia só o que a tarefa pede:
 | --- | --- |
 | Saber a superfície e a posição do agente | [references/superficies.md](references/superficies.md) |
 | Iniciar agentes com as flags de permissão | [references/agentes.md](references/agentes.md) |
-| Trabalhar no Herdr Desktop e no herdr-core | [references/desktop.md](references/desktop.md) |
+| Usar o `hc`: terminais, esperas, mensagens, comandos demorados, outras máquinas | [references/herdr-core.md](references/herdr-core.md) |
+| Pôr painéis, abas e espaços na janela do Desktop | [references/desktop.md](references/desktop.md) |
 | Trabalhar no Herdr TUI | [references/tui.md](references/tui.md) |
-| Delegar, acompanhar, coletar e limpar | [references/orquestracao.md](references/orquestracao.md) |
+| Delegar, confirmar o início, acompanhar, coletar e limpar | [references/orquestracao.md](references/orquestracao.md) |
 | Instalar e configurar Herdr, skills, integrações e templates | [references/configuracao.md](references/configuracao.md) |
 | Gravar as instruções no `AGENTS.md` e no `CLAUDE.md` | [references/instrucoes.md](references/instrucoes.md) |
 
@@ -36,23 +37,30 @@ TUI. Eles acompanham a versão instalada e valem mais que esta skill quando
 houver diferença de sintaxe.
 
 Os scripts ficam em `scripts/`, ao lado deste arquivo, e rodam com Node.js 18
-ou mais novo. Nos exemplos, `<skill>` é a pasta desta skill. Numa instalação
-feita pelo `npx skills`, `~/.agents/skills/herdrfy` e os links nas pastas
-dos agentes, como `~/.claude/skills/herdrfy`, levam aos mesmos arquivos;
-qualquer um serve.
+ou mais novo. Eles só leem o Herdr, aceitam `--help` e escrevem a saída e as
+chaves do JSON em inglês. Nos exemplos, `<skill>` é a pasta desta skill. Numa
+instalação feita pelo `npx skills`, `~/.agents/skills/herdrfy` e os links nas
+pastas dos agentes, como `~/.claude/skills/herdrfy`, levam aos mesmos
+arquivos; qualquer um serve.
+
+| Script | Função |
+| --- | --- |
+| `where.mjs` | localizador: superfície e posição do agente |
+| `doctor.mjs` | estado da instalação e pendências |
+| `instructions.mjs` | bloco de instruções no `AGENTS.md` e no `CLAUDE.md` |
 
 ## Regras
 
-1. **A pessoa informa a superfície.** Ela diz se está no TUI ou no Desktop.
-   Use o que ela disser. Sem essa informação, rode o localizador sem
-   `--superficie`; se ele responder "fora do Herdr" ou a resposta contrariar
-   o pedido, pergunte uma vez na sessão e guarde a resposta.
-2. **Localize antes de agir.** Rode
-   `node <skill>/scripts/onde.mjs --superficie <tui|desktop>` antes do primeiro
-   comando do Herdr e depois de qualquer mudança de lugar. Use os IDs que ele
-   devolve. Não use `HERDR_WORKSPACE_ID`, `HERDR_TAB_ID` e `HERDR_PANE_ID`
-   como endereço: elas envelhecem quando o painel é movido e aparecem
-   herdadas em terminais do herdr-core.
+1. **O localizador detecta, a pessoa confirma.** Rode o localizador sem
+   opções: ele detecta a superfície. Quando a pessoa disser se está no TUI
+   ou no Desktop, a palavra dela vale mais: passe com `--surface`. Pergunte
+   uma vez na sessão só quando a resposta for `Outside Herdr` ou contrariar
+   o pedido, e guarde a resposta.
+2. **Localize antes de agir.** Rode `node <skill>/scripts/where.mjs` antes
+   do primeiro comando do Herdr e depois de qualquer mudança de lugar. Use
+   os IDs que ele devolve. Não use `HERDR_WORKSPACE_ID`, `HERDR_TAB_ID` e
+   `HERDR_PANE_ID` como endereço: elas envelhecem quando o painel é movido e
+   aparecem herdadas em terminais do herdr-core.
 3. **Um comando por superfície.** No Desktop use `hc` e `herdr-app`, nunca
    `herdr`. No TUI use `herdr`, nunca `hc`. `HC_TERMINAL_ID` presente indica
    terminal do herdr-core mesmo com `HERDR_ENV=1` no ambiente.
@@ -61,7 +69,12 @@ qualquer um serve.
    pessoa pedir com essas palavras. No Desktop, repita no terminal novo os
    rótulos `herdr.space` e `herdr.tab` do seu terminal. No TUI, divida o seu
    painel.
-5. **Agentes sempre com as permissões liberadas.** Inicie Claude Code, Codex,
+5. **Sem aba, sem rótulo inventado.** Quando o localizador responder
+   `placement` diferente de `tab`, o seu terminal não tem aba para repetir.
+   Abra o terminal novo sem rótulos, como auxiliar, e diga isso à pessoa
+   com o endereço dele. Não copie rótulos de outro terminal nem monte IDs a
+   partir do texto de `where`.
+6. **Agentes sempre com as permissões liberadas.** Inicie Claude Code, Codex,
    OpenCode e qualquer outro agente pelo comando completo com as flags da
    tabela de [references/agentes.md](references/agentes.md). Não use alias de
    shell (`cc`, `cx`, `oc`), não use `zsh -ic` e não inicie agente sem as
@@ -69,23 +82,23 @@ qualquer um serve.
    alias, o pedido de usar esta skill vale para o lançamento: use o comando
    completo, que leva as mesmas flags, e avise a pessoa da diferença entre
    as duas regras no relato final.
-6. **Agente interativo, em segundo plano.** Nada de modo de impressão única
+7. **Agente interativo, em segundo plano.** Nada de modo de impressão única
    (`claude -p`, `codex exec`, `opencode run`): o agente precisa continuar
    visível, receber novas mensagens e aceitar que a pessoa assuma o terminal.
-7. **Leia a tela antes de reenviar, responder ou resumir.** Um envio que
+8. **Leia a tela antes de reenviar, responder ou resumir.** Um envio que
    falhou pode ter chegado. Um status vazio pode ser um diálogo de confiança
    da pasta. Um resultado só vale depois de lido na tela ou no arquivo.
-8. **Espere com os comandos do Herdr.** Use `hc wait` e
+9. **Espere com os comandos do Herdr.** Use `hc wait` e
    `herdr agent wait`/`herdr pane wait-output`. Não use `sleep` nem laço de
    consulta.
-9. **Pergunta de permissão é da pessoa.** Quando um agente parar em `blocked`
-   com uma pergunta ou pedido de aprovação, leia a tela e leve a pergunta à
-   pessoa. A exceção é o diálogo de confiança da pasta que a própria pessoa
-   indicou para o trabalho: aceite e siga.
-10. **Encerre só o que você abriu.** Não feche painéis, abas, espaços,
+10. **Pergunta de permissão é da pessoa.** Quando um agente parar em
+    `blocked` com uma pergunta ou pedido de aprovação, leia a tela e leve a
+    pergunta à pessoa. A exceção é o diálogo de confiança da pasta que a
+    própria pessoa indicou para o trabalho: aceite e siga.
+11. **Encerre só o que você abriu.** Não feche painéis, abas, espaços,
     workspaces ou sessões de outra origem. Nunca rode `hc server stop`,
     `hc server restart` ou `herdr server stop` sem pedido explícito.
-11. **Foco fica com a pessoa.** No TUI use `--no-focus`. No Desktop não mude
+12. **Foco fica com a pessoa.** No TUI use `--no-focus`. No Desktop não mude
     o que a janela mostra sem pedido.
 
 ## Passos
@@ -93,25 +106,27 @@ qualquer um serve.
 ### 1. Localizar
 
 ```bash
-node <skill>/scripts/onde.mjs --superficie desktop   # ou tui
-node <skill>/scripts/onde.mjs --json                 # para ler por script
+node <skill>/scripts/where.mjs                     # detecta a superfície
+node <skill>/scripts/where.mjs --surface desktop   # ou tui, quando a pessoa informou
+node <skill>/scripts/where.mjs --json              # para ler por script
 ```
 
 Guarde da resposta: no Desktop, o endereço do terminal (`t1s`), o espaço
-(`sp...`), a aba (`tb...`), a pasta e se o `herdr-app` existe na máquina; no
-TUI, o workspace (`w1`), a aba (`w1:t1`) e o painel (`w1:p1`). Com
-`encontrado: false`, o agente não roda dentro daquela superfície: opere por
-IDs explícitos da lista devolvida e avise a pessoa antes de abrir qualquer
-coisa. Detalhes em [references/superficies.md](references/superficies.md).
+(`sp...`), a aba (`tb...`), o `placement`, a pasta e se o `herdr-app` existe
+na máquina; no TUI, o workspace (`w1`), a aba (`w1:t1`) e o painel
+(`w1:p1`). Com `found: false`, o agente não roda dentro daquela superfície:
+opere por IDs explícitos da lista devolvida e avise a pessoa antes de abrir
+qualquer coisa. Detalhes em
+[references/superficies.md](references/superficies.md).
 
 ### 2. Conferir a instalação, quando o pedido for configurar
 
 ```bash
-node <skill>/scripts/diagnostico.mjs
+node <skill>/scripts/doctor.mjs
 ```
 
 A saída lista binários, servidores, integrações, skills, templates, agentes e
-as pendências com o comando de cada uma. Siga
+as pendências (`Pending`) com o comando de cada uma. Siga
 [references/configuracao.md](references/configuracao.md) para resolver.
 Instalação de binário e mudança em arquivo de configuração da pessoa pedem a
 confirmação dela, salvo quando o pedido já for esse.
@@ -121,9 +136,12 @@ confirmação dela, salvo quando o pedido já for esse.
 Painel na aba de quem pediu, com um shell:
 
 ```bash
-# Desktop: mesmos rótulos do seu terminal
+# Desktop, placement "tab": mesmos rótulos do seu terminal
 hc run --bg --name <nome> --cwd "$PWD" \
   --label herdr.space=<seu-espaço> --label herdr.tab=<sua-aba>
+
+# Desktop, placement "unlabeled" ou "none": auxiliar sem rótulos (regra 5)
+hc run --bg --name <nome> --cwd "$PWD"
 
 # TUI: divide o seu painel sem tirar o foco
 herdr pane split <seu-painel> --direction right --cwd "$PWD" --no-focus
@@ -155,33 +173,18 @@ Para Codex e OpenCode troque só o comando, conforme a tabela de
 
 ### 5. Confirmar que a tarefa começou
 
-No Desktop, espere o primeiro sinal e leia a tela:
-
 ```bash
-hc wait revisor --timeout 30
-hc read revisor
+hc wait revisor --timeout 30 && hc read revisor                    # Desktop
+herdr agent read revisor --source recent-unwrapped --lines 120     # TUI
 ```
 
-Leia o retorno assim:
-
-- `idle` com `turn: 0` e tela sem a tarefa logo depois do lançamento: o
-  agente ainda está subindo, mesmo que já mostre o campo de entrada vazio.
-  A tarefa passada no comando leva alguns segundos para aparecer. Espere de
-  novo e releia. Não reenvie nada.
-- Status vazio depois da espera: costuma ser o diálogo de confiança da
-  pasta. Responda conforme a regra 9 (`hc keys revisor down enter` no Claude
-  Code, `hc keys revisor enter` no Codex), espere de novo e leia a tela.
-- Tarefa visível na tela, com o agente em `working` ou já com resposta: a
-  tarefa começou.
-
-Só reenvie a tarefa depois de pelo menos duas esperas seguidas com o agente
-parado, o campo de entrada vazio e a tela sem a tarefa nem a resposta. Em
-painel estreito a tarefa aparece cortada; o começo dela na tela já prova que
-chegou.
-
-No TUI, `agent start` devolve `agent_not_ready` quando o agente para num
-diálogo: leia com `herdr agent read`, responda com `herdr agent send-keys` e
-só então envie a tarefa.
+A tarefa começou quando ela aparece na tela com o agente em `working` ou já
+com resposta. Um agente parado sem a tarefa na tela costuma estar subindo ou
+num diálogo de confiança da pasta: espere e releia. Reenvie só depois de
+duas esperas seguidas com o agente parado, o campo de entrada vazio e a tela
+sem a tarefa nem a resposta. A leitura de cada retorno, nas duas superfícies,
+está em
+[references/orquestracao.md](references/orquestracao.md#confirmar-que-a-tarefa-começou).
 
 ### 6. Acompanhar, conversar e coletar
 
@@ -201,7 +204,8 @@ em arquivo e leia o arquivo. No Desktop, `hc read` de um agente em `working`
 devolve só a tela visível, mesmo com `--lines`; o histórico vem depois que
 ele para. O aviso que o agente envia com `hc send` chega antes de o turno
 dele acabar: a espera volta com `reason: message` e o agente ainda em
-`working`. Espere mais uma vez até `idle` ou `done` antes de encerrar. Os padrões de delegação estão em
+`working`. Espere mais uma vez até `idle` ou `done` antes de encerrar. Os
+padrões de delegação estão em
 [references/orquestracao.md](references/orquestracao.md).
 
 ### 7. Limpar
@@ -218,9 +222,9 @@ Deixe aberto o que a pessoa pediu para manter visível.
 ### 8. Gravar as instruções, quando o pedido for configurar o projeto
 
 ```bash
-node <skill>/scripts/instrucoes.mjs --check     # confere
-node <skill>/scripts/instrucoes.mjs             # AGENTS.md e CLAUDE.md do projeto
-node <skill>/scripts/instrucoes.mjs --global    # arquivos globais dos agentes
+node <skill>/scripts/instructions.mjs --check     # confere
+node <skill>/scripts/instructions.mjs             # AGENTS.md e CLAUDE.md do projeto
+node <skill>/scripts/instructions.mjs --global    # arquivos globais dos agentes
 ```
 
 O bloco fica entre marcadores e é trocado a cada execução, sem tocar no resto
@@ -228,8 +232,10 @@ do arquivo. Detalhes em [references/instrucoes.md](references/instrucoes.md).
 
 ## Marcos
 
-- Superfície informada pela pessoa e posição confirmada pelo localizador.
-- Cada painel novo na aba de quem pediu, salvo pedido de aba ou espaço novo.
+- Superfície e posição confirmadas pelo localizador, com a palavra da pessoa
+  quando ela informou.
+- Cada painel novo na aba de quem pediu, salvo pedido de aba ou espaço novo,
+  ou auxiliar sem rótulos quando o terminal não tem aba.
 - Cada agente iniciado pelo comando completo com as flags de permissão,
   conferido em `hc get <t>` (campos `argv` e `foreground.argv`) ou em
   `herdr pane process-info --pane <id>`.
@@ -243,7 +249,8 @@ Ao terminar, informe em poucas linhas:
 
 - a superfície e a posição usadas (terminal, espaço e aba, ou workspace, aba
   e painel);
-- o que foi aberto, com nome, endereço e comando de cada agente;
+- o que foi aberto, com nome, endereço e comando de cada agente, e se ficou
+  em painel ou como auxiliar sem painel;
 - o resultado de cada agente, com o caminho do arquivo quando houver;
 - o que ficou aberto de propósito e o que foi encerrado;
 - o que ficou pendente de resposta da pessoa, como um agente parado em

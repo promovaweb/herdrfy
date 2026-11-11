@@ -1,11 +1,11 @@
 # Instalação e configuração
 
-Comece pelo diagnóstico. Ele só lê e lista as pendências com o comando de
-cada uma:
+Comece pelo diagnóstico. Ele só lê e lista as pendências, na seção
+`Pending` (campo `pending` no JSON), com o comando de cada uma:
 
 ```bash
-node <skill>/scripts/diagnostico.mjs
-node <skill>/scripts/diagnostico.mjs --json
+node <skill>/scripts/doctor.mjs
+node <skill>/scripts/doctor.mjs --json
 ```
 
 Instalar binário, instalar skill global e editar arquivo de configuração da
@@ -138,7 +138,8 @@ em `herdr --default-config`. `HERDR_CONFIG_PATH` troca o caminho do arquivo.
 
 ### herdr-core: `~/.config/herdr-core/config.toml`
 
-O arquivo é opcional. Chaves:
+O arquivo é opcional. Os comandos do core estão em
+[herdr-core.md](herdr-core.md). Chaves:
 
 | Chave | Efeito |
 | --- | --- |
@@ -169,9 +170,9 @@ agente aberto ali siga as mesmas regras. Ver [instrucoes.md](instrucoes.md).
 ## 7. Conferência final
 
 ```bash
-node <skill>/scripts/diagnostico.mjs
-node <skill>/scripts/onde.mjs --superficie <tui|desktop>
-node <skill>/scripts/instrucoes.mjs --check
+node <skill>/scripts/doctor.mjs
+node <skill>/scripts/where.mjs --surface <tui|desktop>
+node <skill>/scripts/instructions.mjs --check
 ```
 
 A configuração está completa quando o diagnóstico não lista pendências dos

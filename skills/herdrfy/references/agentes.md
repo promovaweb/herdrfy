@@ -55,7 +55,9 @@ hc run --bg --name <nome> --cwd <pasta> \
   entre aspas vira linha de shell; evite para agentes.
 - Os dois `--label` põem o painel na sua aba. Sem eles o agente roda fora da
   janela e aparece só na lista de agentes, sob o seu terminal. Use essa forma
-  para auxiliares que a pessoa não pediu para ver.
+  para auxiliares que a pessoa não pediu para ver, e quando o localizador
+  responder `placement` diferente de `tab`
+  (ver [desktop.md](desktop.md#terminal-sem-rótulos-de-aba)).
 - Tire a tarefa do comando quando ela for longa ou tiver muitas aspas: inicie
   sem tarefa, espere o agente ficar pronto e envie com `hc send`. A tarefa
   passada no comando fica no `argv` e volta inteira na saída de `hc run`,
@@ -133,8 +135,8 @@ pessoa e espere a resposta. Leia a tela antes de mandar as teclas: as opções
 mudam entre versões, e a tecla certa depende de qual linha está marcada.
 
 Depois de aceitar, espere e leia de novo. A tarefa passada no lançamento
-costuma rodar sozinha em seguida. Reenvie só quando o campo de entrada
-estiver vazio e a tela não mostrar a tarefa nem uma resposta.
+costuma rodar sozinha em seguida. A regra de reenvio está em
+[orquestracao.md](orquestracao.md#confirmar-que-a-tarefa-começou).
 
 ## Conferir que o agente subiu com as flags
 

@@ -15,9 +15,10 @@ arrumar a casa no final.
 
 ## Como a skill trabalha
 
-1. **Superfície.** Você diz se está no Herdr TUI ou no Herdr Desktop.
-2. **Localização.** O agente roda o localizador e descobre o terminal, a aba
-   e o espaço (ou o painel, a aba e o workspace) onde está.
+1. **Localização.** O agente roda o localizador e descobre a superfície e o
+   terminal, a aba e o espaço (ou o painel, a aba e o workspace) onde está.
+2. **Superfície.** Se você disser que está no Herdr TUI ou no Herdr Desktop,
+   a sua frase vale mais que a detecção.
 3. **Lugar.** O que ele abrir aparece na mesma aba de onde você pediu. Aba
    ou espaço novo, só se você pedir.
 4. **Agentes.** Cada agente é iniciado com as permissões liberadas e recebe

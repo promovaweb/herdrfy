@@ -14,17 +14,15 @@ uma superfície.
 | Estado do agente | detectado pela tela e pelas integrações | informado pelo próprio programa (OSC 7501) |
 | Manual embutido | `herdr --skill` | `hc --skill` e `herdr-app --skill` |
 
-O herdr-core também roda sem janela, num servidor. Nesse caso a superfície
-continua sendo "Desktop" para esta skill: os comandos são os do `hc`, e uma
-janela do Herdr Desktop em outra máquina pode estar ligada a esse core.
+O herdr-core também roda sem janela, num servidor, e atende outros clientes
+além da janela do Desktop. Em todos esses casos a superfície continua sendo
+"Desktop" para esta skill: os comandos são os do `hc`, descritos em
+[herdr-core.md](herdr-core.md).
 
 ## Quem define a superfície
 
-A pessoa informa: "estou no TUI" ou "estou no Desktop". Passe a resposta ao
-localizador com `--superficie`. Aceite também os sinônimos: `core` e `hc`
-valem `desktop`; `herdr` vale `tui`.
-
-Sem a informação, rode o localizador sem a opção. A ordem de detecção é:
+Rode o localizador sem opções: ele detecta a superfície pelo ambiente. A
+ordem de detecção é:
 
 1. `HC_TERMINAL_ID` presente: Desktop. Vence sempre, porque um terminal do
    herdr-core pode herdar `HERDR_ENV=1` e IDs de um Herdr TUI que rodava
@@ -32,87 +30,111 @@ Sem a informação, rode o localizador sem a opção. A ordem de detecção é:
 2. `HERDR_ENV=1` sem `HC_TERMINAL_ID`: TUI.
 3. Nenhum dos dois: fora do Herdr.
 
-Pergunte uma vez na sessão quando a resposta for "fora do Herdr" e o pedido
+Quando a pessoa informar ("estou no TUI", "estou no Desktop"), a palavra dela
+vale mais que a detecção: passe com `--surface`. O script aceita os
+sinônimos `core` e `hc` para `desktop`, e `herdr` para `tui`.
+
+Pergunte uma vez na sessão quando a resposta for `Outside Herdr` e o pedido
 envolver o Herdr, ou quando a pessoa citar uma superfície diferente da
 detectada. Depois da resposta, não pergunte de novo.
 
 ## Localizador
 
 ```bash
-node <skill>/scripts/onde.mjs --superficie desktop
-node <skill>/scripts/onde.mjs --superficie tui
-node <skill>/scripts/onde.mjs --json
+node <skill>/scripts/where.mjs                     # detecta a superfície
+node <skill>/scripts/where.mjs --surface desktop   # ou tui, quando a pessoa informou
+node <skill>/scripts/where.mjs --json              # para ler por script
+node <skill>/scripts/where.mjs --help
 ```
 
-Códigos de saída: `0` respondeu, `1` não conseguiu ler o Herdr, `2` argumento
+Os scripts da skill escrevem a saída e as chaves do JSON em inglês. Códigos
+de saída: `0` respondeu, `1` não conseguiu ler o Herdr, `2` argumento
 inválido.
 
 ### Resposta no Desktop
 
 ```json
 {
-  "superficie": "desktop",
-  "encontrado": true,
+  "surface": "desktop",
+  "found": true,
   "cli": "hc",
-  "janela": { "cli": "herdr-app", "disponivel": false },
+  "window": { "cli": "herdr-app", "available": false },
   "terminal": {
     "id": "t1s",
-    "nome": null,
+    "name": null,
     "where": "promovaweb / docs",
-    "espaco": "sp8ecd504c8ef5fec59681282f5b26d8c8",
-    "aba": "tb7ec6e34ffe93cd49a498cc401f4596ab",
-    "pasta": "/home/ana/projeto",
-    "programa": "claude-code",
-    "estado": "live",
+    "space": "sp8ecd504c8ef5fec59681282f5b26d8c8",
+    "tab": "tb7ec6e34ffe93cd49a498cc401f4596ab",
+    "placement": "tab",
+    "identity": "ghostty",
+    "cwd": "/home/ana/projeto",
+    "program": "claude-code",
+    "state": "live",
     "status": "working",
-    "pai": null
+    "parent": null
   },
-  "vizinhos": [{ "id": "t16", "programa": "codex", "status": "idle" }]
+  "neighbors": [{ "id": "t16", "program": "codex", "status": "idle" }]
 }
 ```
 
 - `terminal.id` é o seu endereço. Passe-o aos agentes que você abrir, para
   eles avisarem com `hc send`.
-- `terminal.espaco` e `terminal.aba` são os valores dos rótulos `herdr.space`
+- `terminal.space` e `terminal.tab` são os valores dos rótulos `herdr.space`
   e `herdr.tab`. Repita os dois em todo terminal novo que deva aparecer na
   sua aba.
-- `where` é o rótulo legível "espaço / aba" escrito pela janela.
-- `vizinhos` lista os outros terminais da mesma aba.
-- `janela.disponivel` diz se o `herdr-app` existe nesta máquina. Quando a
+- `where` é o rótulo legível "espaço / aba" escrito por quem mostra o
+  terminal.
+- `terminal.placement` resume os três casos de posição, descritos abaixo.
+- `terminal.identity` repete o campo `identity` do `hc get`. No `hc`
+  0.1.19, os terminais da janela trazem `ghostty` e um terminal sem rótulos
+  de aba trouxe `herdr-mobile`. O manual do `hc` não descreve o campo:
+  use-o como pista para o relato, não como regra.
+- `neighbors` lista os outros terminais da mesma aba.
+- `window.available` diz se o `herdr-app` existe nesta máquina. Quando a
   janela roda em outro computador, ele não existe aqui e a aba ou o painel
   sai pelos rótulos do `hc`.
-- `espaco` e `aba` vazios: o terminal não está na janela (um auxiliar sem
-  rótulos, ou core sem janela). Um terminal novo sem rótulos também fica
-  fora da janela e aparece só na lista de agentes, sob quem o abriu.
-- `encontrado: false`: este processo não é um terminal do core. A lista
-  `vizinhos` traz todos os terminais vivos para você operar por endereço.
+- `found: false`: este processo não é um terminal do core. A lista
+  `neighbors` traz todos os terminais vivos para você operar por endereço.
+
+### Os três casos de `placement`
+
+| `placement` | Rótulos do terminal | Como abrir um painel novo |
+| --- | --- | --- |
+| `tab` | `herdr.space` e `herdr.tab` presentes | repita os dois rótulos; o painel entra na sua aba |
+| `unlabeled` | `where` presente, sem `herdr.space` e `herdr.tab` | não existe aba para repetir; siga [desktop.md](desktop.md#terminal-sem-rótulos-de-aba) |
+| `none` | nenhum dos três | o terminal está fora da janela; siga a mesma seção |
+
+O caso `unlabeled` foi visto num terminal com `identity: herdr-mobile`: ele
+é mostrado com um nome de espaço e aba, mas não carrega os IDs que a janela
+usa para encaixar painéis. Não invente os rótulos a partir do texto de
+`where`.
 
 ### Resposta no TUI
 
 ```json
 {
-  "superficie": "tui",
-  "encontrado": true,
+  "surface": "tui",
+  "found": true,
   "cli": "herdr",
-  "workspace": { "id": "w1", "rotulo": "api" },
-  "aba": { "id": "w1:t2", "rotulo": "agentes" },
-  "painel": { "id": "w1:p5", "pasta": "/home/ana/api", "agente": "claude" },
-  "variaveisAtualizadas": true,
-  "metodo": "processos",
-  "workspaces": [{ "id": "w1", "rotulo": "api", "abas": 2, "paineis": 4 }]
+  "workspace": { "id": "w1", "label": "api" },
+  "tab": { "id": "w1:t2", "label": "agentes" },
+  "pane": { "id": "w1:p5", "cwd": "/home/ana/api", "agent": "claude" },
+  "envCurrent": true,
+  "method": "processes",
+  "workspaces": [{ "id": "w1", "label": "api", "tabs": 2, "panes": 4 }]
 }
 ```
 
-- `painel.id` é o seu painel. Use-o como alvo explícito de `pane split` e
+- `pane.id` é o seu painel. Use-o como alvo explícito de `pane split` e
   `pane layout`.
-- `metodo: "processos"` significa que o painel foi achado pelo shell do
-  próprio processo. `metodo: "variaveis"` significa que o script caiu nas
+- `method: "processes"` significa que o painel foi achado pelo shell do
+  próprio processo. `method: "env"` significa que o script caiu nas
   variáveis de ambiente, sem conferir; trate a posição como provável e
   confirme com `herdr pane get <id>`.
-- `variaveisAtualizadas: false` avisa que `HERDR_PANE_ID` aponta para um ID
-  antigo. Use o ID devolvido.
-- `encontrado: false`: este processo não roda num painel da sessão padrão.
-  Opere só com IDs explícitos lidos de `workspaces`, `herdr pane list` e
+- `envCurrent: false` avisa que `HERDR_PANE_ID` aponta para um ID antigo.
+  Use o ID devolvido.
+- `found: false`: este processo não roda num painel da sessão padrão. Opere
+  só com IDs explícitos lidos de `workspaces`, `herdr pane list` e
   `herdr agent list`, sem `--current`, e diga isso à pessoa antes de abrir
   painéis.
 

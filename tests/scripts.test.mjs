@@ -1,111 +1,252 @@
 /**
- * Arquivo: tests/scripts.test.mjs
- * Descrição: Testes dos scripts da skill que não dependem de um Herdr em
- * execução: o bloco de instruções (criar, atualizar, conferir, remover) e o
- * localizador fora do Herdr.
- * Uso: `npm test` (node --test).
+ * File: tests/scripts.test.mjs
+ * Description: Tests for the skill scripts that do not need a running Herdr:
+ * the instruction block (create, update, check, remove, legacy markers), the
+ * argument handling of the three scripts, and the locator against fake `hc`
+ * and `herdr` executables placed on PATH.
+ * Usage: `npm test` (node --test).
  */
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
-import { lstatSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { chmodSync, lstatSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const scripts = resolve(dirname(fileURLToPath(import.meta.url)), "..", "skills", "herdrfy", "scripts");
-const instrucoes = join(scripts, "instrucoes.mjs");
-const onde = join(scripts, "onde.mjs");
+const instructions = join(scripts, "instructions.mjs");
+const where = join(scripts, "where.mjs");
+const doctor = join(scripts, "doctor.mjs");
+const unix = process.platform !== "win32";
 
-/** Roda um script e devolve código de saída e saída padrão. */
-function rodar(script, args, env = process.env) {
+/** Runs a script and returns exit code, stdout and stderr. */
+function run(script, args, env = process.env) {
   const r = spawnSync(process.execPath, [script, ...args], { encoding: "utf8", env });
-  return { codigo: r.status, saida: r.stdout, erro: r.stderr };
+  return { code: r.status, out: r.stdout, err: r.stderr };
 }
 
-test("instrucoes: cria AGENTS.md e CLAUDE.md num projeto vazio", () => {
-  const pasta = mkdtempSync(join(tmpdir(), "herdrfy-"));
-  assert.equal(rodar(instrucoes, ["--projeto", pasta, "--check"]).codigo, 1);
-  assert.equal(rodar(instrucoes, ["--projeto", pasta]).codigo, 0);
-  const agents = readFileSync(join(pasta, "AGENTS.md"), "utf8");
-  assert.match(agents, /<!-- herdrfy:inicio -->/u);
+/** Returns a copy of the environment without any Herdr variable. */
+function cleanEnv(extra = {}) {
+  const env = { ...process.env };
+  for (const key of Object.keys(env)) if (key.startsWith("HC_") || key.startsWith("HERDR_")) delete env[key];
+  return { ...env, ...extra };
+}
+
+/**
+ * Creates a folder with a fake executable that prints canned JSON. `answers`
+ * maps the first two arguments joined by a space ("get t1", "pane list") to
+ * the object to print; a one-word key ("ls") matches the first argument.
+ */
+function fakeCli(name, answers) {
+  const dir = mkdtempSync(join(tmpdir(), "herdrfy-bin-"));
+  const cases = Object.entries(answers)
+    .map(([key, value]) => `  "${key}") cat <<'JSON'\n${JSON.stringify(value)}\nJSON\n  ;;`)
+    .join("\n");
+  const body = `#!/bin/sh\nfor key in "$1 $2" "$1"; do\n  case "$key" in\n${cases}\n  *) continue ;;\n  esac\n  exit 0\ndone\necho "unexpected call: $*" >&2\nexit 1\n`;
+  writeFileSync(join(dir, name), body);
+  chmodSync(join(dir, name), 0o755);
+  return dir;
+}
+
+test("instructions: creates AGENTS.md and CLAUDE.md in an empty project", () => {
+  const dir = mkdtempSync(join(tmpdir(), "herdrfy-"));
+  assert.equal(run(instructions, ["--project", dir, "--check"]).code, 1);
+  assert.equal(run(instructions, ["--project", dir]).code, 0);
+  const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
+  assert.match(agents, /<!-- herdrfy:start -->/u);
+  assert.match(agents, /<!-- herdrfy:end -->/u);
   assert.match(agents, /claude --permission-mode=auto --dangerously-skip-permissions/u);
   assert.match(agents, /codex --yolo --no-daemon/u);
   assert.match(agents, /opencode --auto/u);
-  assert.match(agents, /onde\.mjs --superficie/u);
-  assert.doesNotMatch(agents, /\{\{ONDE\}\}/u);
-  // CLAUDE.md nasce como link ou como arquivo com o mesmo bloco.
-  assert.match(readFileSync(join(pasta, "CLAUDE.md"), "utf8"), /herdrfy:inicio/u);
-  assert.equal(rodar(instrucoes, ["--projeto", pasta, "--check"]).codigo, 0);
+  assert.match(agents, /where\.mjs/u);
+  assert.doesNotMatch(agents, /\{\{WHERE\}\}/u);
+  // CLAUDE.md is born as a link or as a file with the same block.
+  assert.match(readFileSync(join(dir, "CLAUDE.md"), "utf8"), /herdrfy:start/u);
+  assert.equal(run(instructions, ["--project", dir, "--check"]).code, 0);
 });
 
-test("instrucoes: preserva o texto existente e não duplica o bloco", () => {
-  const pasta = mkdtempSync(join(tmpdir(), "herdrfy-"));
-  writeFileSync(join(pasta, "AGENTS.md"), "# Projeto\n\nRegra própria.\n");
-  writeFileSync(join(pasta, "CLAUDE.md"), "# Claude\n");
-  rodar(instrucoes, ["--projeto", pasta]);
-  rodar(instrucoes, ["--projeto", pasta]);
-  for (const nome of ["AGENTS.md", "CLAUDE.md"]) {
-    const texto = readFileSync(join(pasta, nome), "utf8");
-    assert.equal(texto.split("<!-- herdrfy:inicio -->").length, 2, `${nome} tem um bloco só`);
-    assert.equal(lstatSync(join(pasta, nome)).isSymbolicLink(), false);
+test("instructions: keeps the existing text and does not duplicate the block", () => {
+  const dir = mkdtempSync(join(tmpdir(), "herdrfy-"));
+  writeFileSync(join(dir, "AGENTS.md"), "# Project\n\nOwn rule.\n");
+  writeFileSync(join(dir, "CLAUDE.md"), "# Claude\n");
+  run(instructions, ["--project", dir]);
+  run(instructions, ["--project", dir]);
+  for (const name of ["AGENTS.md", "CLAUDE.md"]) {
+    const text = readFileSync(join(dir, name), "utf8");
+    assert.equal(text.split("<!-- herdrfy:start -->").length, 2, `${name} has a single block`);
+    assert.equal(lstatSync(join(dir, name)).isSymbolicLink(), false);
   }
-  assert.match(readFileSync(join(pasta, "AGENTS.md"), "utf8"), /^# Projeto\n\nRegra própria\.\n/u);
+  assert.match(readFileSync(join(dir, "AGENTS.md"), "utf8"), /^# Project\n\nOwn rule\.\n/u);
 });
 
-test("instrucoes: troca um bloco antigo pelo atual", () => {
-  const pasta = mkdtempSync(join(tmpdir(), "herdrfy-"));
-  writeFileSync(join(pasta, "AGENTS.md"), "antes\n\n<!-- herdrfy:inicio -->\nvelho\n<!-- herdrfy:fim -->\n\ndepois\n");
-  assert.equal(rodar(instrucoes, ["--arquivo", join(pasta, "AGENTS.md"), "--check"]).codigo, 1);
-  rodar(instrucoes, ["--arquivo", join(pasta, "AGENTS.md")]);
-  const texto = readFileSync(join(pasta, "AGENTS.md"), "utf8");
-  assert.doesNotMatch(texto, /velho/u);
-  assert.match(texto, /^antes\n/u);
-  assert.match(texto, /\ndepois\n$/u);
+test("instructions: replaces an outdated block with the current one", () => {
+  const dir = mkdtempSync(join(tmpdir(), "herdrfy-"));
+  const file = join(dir, "AGENTS.md");
+  writeFileSync(file, "before\n\n<!-- herdrfy:start -->\nold\n<!-- herdrfy:end -->\n\nafter\n");
+  const check = run(instructions, ["--file", file, "--check", "--json"]);
+  assert.equal(check.code, 1);
+  assert.equal(JSON.parse(check.out).files[0].state, "outdated");
+  run(instructions, ["--file", file]);
+  const text = readFileSync(file, "utf8");
+  assert.doesNotMatch(text, /\nold\n/u);
+  assert.match(text, /^before\n/u);
+  assert.match(text, /\nafter\n$/u);
 });
 
-test("instrucoes: --remover devolve o arquivo ao texto original", () => {
-  const pasta = mkdtempSync(join(tmpdir(), "herdrfy-"));
-  const original = "# Projeto\n\nRegra própria.\n";
-  writeFileSync(join(pasta, "AGENTS.md"), original);
-  writeFileSync(join(pasta, "CLAUDE.md"), original);
-  rodar(instrucoes, ["--projeto", pasta]);
-  rodar(instrucoes, ["--projeto", pasta, "--remover"]);
-  assert.equal(readFileSync(join(pasta, "AGENTS.md"), "utf8"), original);
-  assert.equal(readFileSync(join(pasta, "CLAUDE.md"), "utf8"), original);
+test("instructions: rewrites a block with the markers used before 0.2.0", () => {
+  const dir = mkdtempSync(join(tmpdir(), "herdrfy-"));
+  const file = join(dir, "AGENTS.md");
+  writeFileSync(file, "before\n\n<!-- herdrfy:inicio -->\nold\n<!-- herdrfy:fim -->\n\nafter\n");
+  assert.equal(JSON.parse(run(instructions, ["--file", file, "--check", "--json"]).out).files[0].state, "outdated");
+  run(instructions, ["--file", file]);
+  const text = readFileSync(file, "utf8");
+  assert.doesNotMatch(text, /herdrfy:inicio|herdrfy:fim/u);
+  assert.equal(text.split("<!-- herdrfy:start -->").length, 2);
+  assert.match(text, /^before\n/u);
+  assert.match(text, /\nafter\n$/u);
+  // --remove also takes a legacy block out.
+  writeFileSync(file, "before\n\n<!-- herdrfy:inicio -->\nold\n<!-- herdrfy:fim -->\n");
+  run(instructions, ["--file", file, "--remove"]);
+  assert.equal(readFileSync(file, "utf8"), "before\n");
 });
 
-test("instrucoes: argumento desconhecido sai com 2", () => {
-  assert.equal(rodar(instrucoes, ["--nao-existe"]).codigo, 2);
+test("instructions: --remove returns the file to its original text", () => {
+  const dir = mkdtempSync(join(tmpdir(), "herdrfy-"));
+  const original = "# Project\n\nOwn rule.\n";
+  writeFileSync(join(dir, "AGENTS.md"), original);
+  writeFileSync(join(dir, "CLAUDE.md"), original);
+  run(instructions, ["--project", dir]);
+  run(instructions, ["--project", dir, "--remove"]);
+  assert.equal(readFileSync(join(dir, "AGENTS.md"), "utf8"), original);
+  assert.equal(readFileSync(join(dir, "CLAUDE.md"), "utf8"), original);
 });
 
-test("onde: fora do Herdr responde superficie nula com código 0", () => {
-  const env = { ...process.env };
-  for (const chave of Object.keys(env)) if (chave.startsWith("HC_") || chave.startsWith("HERDR_")) delete env[chave];
-  const r = rodar(onde, ["--json"], env);
-  assert.equal(r.codigo, 0);
-  assert.deepEqual(JSON.parse(r.saida), { superficie: null, encontrado: false });
+test("instructions: warns when the file tells agents to start through an alias", () => {
+  const dir = mkdtempSync(join(tmpdir(), "herdrfy-"));
+  const file = join(dir, "AGENTS.md");
+  writeFileSync(file, "# Project\n\nUse `zsh -ic cx` to open Codex.\n");
+  assert.deepEqual(JSON.parse(run(instructions, ["--file", file, "--json"]).out).files[0].conflicts, [3]);
+  // The block itself is not scanned.
+  writeFileSync(file, "# Project\n");
+  assert.equal(JSON.parse(run(instructions, ["--file", file, "--json"]).out).files[0].conflicts, undefined);
 });
 
-test("onde: superfície inválida sai com 2", () => {
-  assert.equal(rodar(onde, ["--superficie", "janela"]).codigo, 2);
-});
-
-test("diagnostico: responde JSON com as seções esperadas", () => {
-  const saida = execFileSync(process.execPath, [join(scripts, "diagnostico.mjs"), "--json"], { encoding: "utf8" });
-  const dados = JSON.parse(saida);
-  for (const chave of ["ambiente", "binarios", "servidores", "integracoes", "skills", "templates", "agentes", "configuracao", "pendencias"]) {
-    assert.ok(chave in dados, `falta ${chave}`);
+test("all scripts: --help prints usage and exits 0", () => {
+  for (const script of [where, doctor, instructions]) {
+    const r = run(script, ["--help"], cleanEnv());
+    assert.equal(r.code, 0);
+    assert.match(r.out, /^Usage: node /u);
   }
 });
 
-test("instrucoes: avisa quando o arquivo manda iniciar agentes por alias", () => {
-  const pasta = mkdtempSync(join(tmpdir(), "herdrfy-"));
-  writeFileSync(join(pasta, "AGENTS.md"), "# Projeto\n\nUse `zsh -ic cx` para abrir o Codex.\n");
-  const r = rodar(instrucoes, ["--arquivo", join(pasta, "AGENTS.md"), "--json"]);
-  assert.deepEqual(JSON.parse(r.saida).arquivos[0].conflitos, [3]);
-  // O bloco cita cc, cx e oc como exemplo do que não usar; não conta.
-  writeFileSync(join(pasta, "AGENTS.md"), "# Projeto\n");
-  const limpo = rodar(instrucoes, ["--arquivo", join(pasta, "AGENTS.md"), "--json"]);
-  assert.equal(JSON.parse(limpo.saida).arquivos[0].conflitos, undefined);
+test("all scripts: an unknown argument exits 2", () => {
+  for (const script of [where, doctor, instructions]) {
+    const r = run(script, ["--no-such-flag"], cleanEnv());
+    assert.equal(r.code, 2);
+    assert.match(r.err, /Unknown argument: --no-such-flag/u);
+  }
+  assert.equal(run(instructions, ["--project"]).code, 2);
+  assert.equal(run(instructions, ["--file"]).code, 2);
+});
+
+test("where: outside Herdr answers a null surface with code 0", () => {
+  const r = run(where, ["--json"], cleanEnv());
+  assert.equal(r.code, 0);
+  assert.deepEqual(JSON.parse(r.out), { surface: null, found: false });
+});
+
+test("where: an invalid or missing surface exits 2", () => {
+  assert.equal(run(where, ["--surface", "window"]).code, 2);
+  assert.equal(run(where, ["--surface"]).code, 2);
+});
+
+test("where: desktop terminal in a tab reports labels and neighbors", { skip: !unix }, () => {
+  const labels = { "herdr.space": "sp1", "herdr.tab": "tb1", where: "api / docs" };
+  const bin = fakeCli("hc", {
+    "get t1": { address: "t1", name: null, cwd: "/work", labels, identity: "ghostty", state: "live", status: { app: "claude-code", state: "working" }, parent: null },
+    ls: { terminals: [{ address: "t1" }, { address: "t2", agent: "codex", status: "idle", where: "api / docs" }] },
+  });
+  const r = run(where, ["--json", "--surface", "hc"], cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HC_TERMINAL_ID: "t1", HERDR_ENV: "1" }));
+  assert.equal(r.code, 0, r.err);
+  const data = JSON.parse(r.out);
+  assert.equal(data.surface, "desktop");
+  assert.equal(data.found, true);
+  assert.deepEqual(
+    { id: data.terminal.id, space: data.terminal.space, tab: data.terminal.tab, placement: data.terminal.placement, program: data.terminal.program, status: data.terminal.status },
+    { id: "t1", space: "sp1", tab: "tb1", placement: "tab", program: "claude-code", status: "working" },
+  );
+  assert.deepEqual(data.neighbors.map((n) => n.id), ["t2"]);
+});
+
+test("where: desktop terminal with a where label but no tab labels is unlabeled", { skip: !unix }, () => {
+  const bin = fakeCli("hc", {
+    "get t26": { address: "t26", cwd: "/work", labels: { "herdr.seen": "1", where: "herdrfy / main" }, identity: "herdr-mobile", state: "live" },
+  });
+  const env = cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HC_TERMINAL_ID: "t26" });
+  const data = JSON.parse(run(where, ["--json"], env).out);
+  assert.equal(data.terminal.placement, "unlabeled");
+  assert.equal(data.terminal.space, null);
+  assert.equal(data.terminal.identity, "herdr-mobile");
+  assert.deepEqual(data.neighbors, []);
+  const text = run(where, [], env).out;
+  assert.match(text, /Placement: shown as "herdrfy \/ main"/u);
+  assert.doesNotMatch(text, /outside the window/u);
+});
+
+test("where: desktop terminal without labels is outside the window", { skip: !unix }, () => {
+  const bin = fakeCli("hc", { "get t2": { address: "t2", cwd: "/work", labels: {}, state: "live" } });
+  const env = cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HC_TERMINAL_ID: "t2" });
+  assert.equal(JSON.parse(run(where, ["--json"], env).out).terminal.placement, "none");
+  assert.match(run(where, [], env).out, /outside the window/u);
+});
+
+test("where: desktop named by the person outside a core terminal lists the live ones", { skip: !unix }, () => {
+  const bin = fakeCli("hc", { ls: { terminals: [{ address: "t5", agent: "zsh", where: "api / main" }] } });
+  const data = JSON.parse(run(where, ["--json", "--surface", "desktop"], cleanEnv({ PATH: `${bin}:/usr/bin:/bin` })).out);
+  assert.equal(data.found, false);
+  assert.equal(data.terminal, null);
+  assert.deepEqual(data.neighbors.map((n) => n.id), ["t5"]);
+});
+
+test("where: TUI pane found through the environment variables", { skip: !unix }, () => {
+  const bin = fakeCli("herdr", {
+    "workspace list": { result: { workspaces: [{ workspace_id: "w1", label: "api", tab_count: 2, pane_count: 3 }] } },
+    "pane list": { result: { panes: [{ pane_id: "w1:p5", workspace_id: "w1", tab_id: "w1:t2", cwd: "/work", agent: "claude" }] } },
+    "tab list": { result: { tabs: [{ tab_id: "w1:t2", label: "agents" }] } },
+  });
+  const data = JSON.parse(run(where, ["--json"], cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HERDR_ENV: "1", HERDR_PANE_ID: "w1:p5" })).out);
+  assert.equal(data.surface, "tui");
+  assert.equal(data.found, true);
+  assert.deepEqual(data.workspace, { id: "w1", label: "api" });
+  assert.deepEqual(data.tab, { id: "w1:t2", label: "agents" });
+  assert.deepEqual(data.pane, { id: "w1:p5", cwd: "/work", agent: "claude" });
+  assert.equal(data.envCurrent, true);
+  assert.equal(data.method, "env");
+});
+
+test("where: TUI process outside every pane answers found false", { skip: !unix }, () => {
+  const bin = fakeCli("herdr", {
+    "workspace list": { result: { workspaces: [{ workspace_id: "w1", label: "api", tab_count: 1, pane_count: 1 }] } },
+    "pane list": { result: { panes: [{ pane_id: "w1:p1", workspace_id: "w1", tab_id: "w1:t1" }] } },
+  });
+  const data = JSON.parse(run(where, ["--json", "--surface", "tui"], cleanEnv({ PATH: `${bin}:/usr/bin:/bin` })).out);
+  assert.equal(data.found, false);
+  assert.deepEqual(data.workspaces, [{ id: "w1", label: "api", tabs: 1, panes: 1 }]);
+});
+
+test("where: a failing hc exits 1", { skip: !unix }, () => {
+  const bin = fakeCli("hc", {});
+  const r = run(where, [], cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HC_TERMINAL_ID: "t1" }));
+  assert.equal(r.code, 1);
+  assert.match(r.err, /Could not query Herdr/u);
+});
+
+test("doctor: answers JSON with the expected sections", () => {
+  const r = run(doctor, ["--json"]);
+  assert.equal(r.code, 0);
+  const data = JSON.parse(r.out);
+  for (const key of ["environment", "binaries", "servers", "integrations", "skills", "templates", "agents", "config", "pending"]) {
+    assert.ok(key in data, `missing ${key}`);
+  }
 });

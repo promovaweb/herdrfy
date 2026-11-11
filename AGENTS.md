@@ -8,16 +8,22 @@ o Herdr, no Herdr TUI (`herdr`) e no Herdr Desktop com herdr-core (`hc`,
 
 ## Idioma
 
-Português do Brasil em skill, referências, guia, changelog, comentários e
-mensagens dos scripts. Termos técnicos, comandos, flags e estados do Herdr
+Scripts sempre em inglês: nomes de arquivo, opções, chaves do JSON,
+identificadores, comentários e mensagens de `skills/herdrfy/scripts/`,
+`scripts/` e `tests/`.
+
+Todo o resto em português do Brasil: skill, referências, assets, guia,
+README e changelog. Termos técnicos, comandos, flags e estados do Herdr
 ficam em inglês, como os binários os escrevem (`blocked`, `idle`,
-`workspace`).
+`workspace`). Ao citar a saída de um script no texto, copie a mensagem em
+inglês como ele escreve.
 
 ## Ordem de leitura
 
 1. Este arquivo.
 2. `skills/herdrfy/SKILL.md` e a referência ligada à tarefa.
 3. `docs/user/README.md` quando a mudança afetar o guia.
+4. `CONTRIBUTING.md` antes de validar ou publicar.
 
 ## Regras
 
@@ -39,8 +45,16 @@ ficam em inglês, como os binários os escrevem (`blocked`, `idle`,
   palavras que o validador veta. Nomeie a consequência, a escolha, a
   comprovação ou a regra em vez do termo genérico.
 - Scripts em Node.js, sem dependências, com cabeçalho que explica uso,
-  saída e códigos de saída. Eles só leem o Herdr; quem altera terminais é o
+  saída e códigos de saída. Todos aceitam `--help` e saem com 2 para
+  argumento desconhecido. Eles só leem o Herdr; quem altera terminais é o
   agente, pelos comandos do Herdr.
+- Mudança no nome de um script, de uma opção, de uma chave do JSON ou de um
+  marcador atinge `SKILL.md`, as referências, o guia, o README e os testes.
+  Troque todos na mesma mudança e registre no changelog a ação que ela pede
+  de quem já instalou.
+- A leitura dos sinais logo depois de lançar um agente fica só em
+  `references/orquestracao.md`, seção "Confirmar que a tarefa começou". Os
+  outros arquivos apontam para ela.
 - Testes de comportamento novo do Herdr usam terminais e sessões próprios
   (`herdr --session <nome> server` para o TUI) e são encerrados ao final.
   Não pare o servidor nem o core de ninguém.
@@ -57,4 +71,4 @@ Confira `git status --short` ao final e preserve mudanças que já existiam.
 
 Versão em `package.json`, entrada em `CHANGELOG.md`, tag `vX.Y.Z` e GitHub
 Release, criada pelo workflow `Release` quando a tag chega. O fluxo está em
-`docs/user/07-publicacao.md`.
+`CONTRIBUTING.md`.

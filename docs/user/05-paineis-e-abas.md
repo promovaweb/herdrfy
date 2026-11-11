@@ -24,6 +24,10 @@ Um auxiliar aberto sem esses identificadores não ganha painel. Ele aparece
 na lista de agentes, sob o agente que o abriu. Você pode clicar para espiar
 ou transformá-lo em aba.
 
+Quando o terminal do próprio agente não pertence a uma aba (aberto pelo
+aplicativo móvel, por exemplo), tudo o que ele abre fica como auxiliar. Ele
+avisa você e só cria uma aba se você pedir.
+
 ## No TUI
 
 O agente olha o tamanho do painel dele e divide o lado maior: painel largo

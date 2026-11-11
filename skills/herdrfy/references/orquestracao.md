@@ -40,6 +40,55 @@ Ao terminar ou travar, rode: hc send t1s "revisão pronta em /tmp/revisao-pagame
 Esse hc send é o único comando do Herdr que você precisa; não carregue skill para isso.
 ```
 
+## Confirmar que a tarefa começou
+
+Um agente recém-aberto leva alguns segundos para mostrar a tarefa. Confirme
+pela tela antes de seguir, e não reenvie no primeiro sinal de silêncio: um
+reenvio precipitado faz o agente rodar a mesma tarefa duas vezes.
+
+### No Desktop
+
+```bash
+hc wait revisor --timeout 30
+hc read revisor
+```
+
+| O que voltou | Leitura | O que fazer |
+| --- | --- | --- |
+| `idle` com `turn: 0` e tela sem a tarefa | o agente ainda sobe, mesmo com o campo de entrada já visível | espere de novo e releia |
+| Status vazio depois da espera | costuma ser o diálogo de confiança da pasta | leia a tela e siga [agentes.md](agentes.md#diálogo-de-confiança-da-pasta) |
+| Tarefa na tela, agente em `working` ou já com resposta | a tarefa começou | siga com o seu trabalho |
+| `first_message.sent: false` num lançamento por template | o core não entregou a tarefa | leia a tela, resolva o que impede e envie com `hc send` |
+| `blocked` | o agente espera uma pessoa | leia a tela e leve a pergunta à pessoa |
+
+A tarefa passada como argumento no lançamento não aumenta `turn`: um agente
+pode responder a ela e continuar com `turn: 0` e `status: idle`. A prova de
+que a tarefa rodou é a tela. Em painel estreito a tarefa aparece cortada; o
+começo dela na tela já prova que chegou.
+
+### No TUI
+
+```bash
+herdr agent start revisor --kind claude --pane <painel-novo> -- \
+  --permission-mode=auto --dangerously-skip-permissions
+herdr agent prompt revisor "<tarefa>" --wait --timeout 300000
+herdr agent read revisor --source recent-unwrapped --lines 120
+```
+
+| O que voltou | Leitura | O que fazer |
+| --- | --- | --- |
+| `agent start` com `agent_not_ready` | o agente parou num diálogo antes de ficar pronto | leia com `herdr agent read`, responda com `herdr agent send-keys` e só então envie a tarefa |
+| `agent prompt` com `agent_blocked` | o agente já esperava uma resposta; nada foi enviado | leia a tela e leve a pergunta à pessoa |
+| `agent_prompt_stalled` ou `timeout` | não provam que o texto não chegou | leia a tela antes de qualquer reenvio |
+| `idle`, `done` ou `blocked` depois de `--wait` | o turno assentou | leia a tela; `idle` e `done` não garantem que um diálogo desconhecido foi reconhecido |
+| `unknown` | o Herdr não conseguiu classificar o painel | `herdr agent explain <alvo> --json` mostra o motivo |
+
+### Regra de reenvio, nas duas superfícies
+
+Reenvie a tarefa só depois de duas esperas seguidas com o agente parado, o
+campo de entrada vazio e a tela sem a tarefa nem a resposta. Antes disso,
+espere e releia.
+
 ## Ciclo no Desktop
 
 ```bash
@@ -100,8 +149,7 @@ com `herdr agent wait revisor --timeout <ms>`.
 
 | Sinal | O que fazer |
 | --- | --- |
-| `idle` com `turn: 0` e tela sem a tarefa logo depois do lançamento | o agente ainda sobe; espere de novo e releia, sem reenviar |
-| Status vazio logo depois do lançamento | leia a tela; se for o diálogo de confiança da pasta do pedido, aceite |
+| Dúvida se a tarefa começou | siga "Confirmar que a tarefa começou", acima |
 | Espera voltou com `reason: message` | é o aviso de um filho; trate e espere de novo até `idle` ou `done` |
 | `blocked` | leia a tela e leve a pergunta à pessoa; não responda por ela |
 | `error` | leia o motivo; envie nova instrução ou encerre |
@@ -124,3 +172,6 @@ Encerre o auxiliar depois de ler e aceitar o resultado. Mantenha aberto o
 que a pessoa pediu para ver. Antes de encerrar em lote, liste só os seus:
 no Desktop, os filhos aparecem com `parent` igual ao seu endereço em
 `hc get <t>`; no TUI, guarde os IDs dos painéis que você criou.
+
+Os comandos do `hc` usados aqui estão em [herdr-core.md](herdr-core.md), e
+os do `herdr`, em [tui.md](tui.md).

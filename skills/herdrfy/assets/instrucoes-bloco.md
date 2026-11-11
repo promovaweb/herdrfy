@@ -3,19 +3,22 @@
 Este ambiente usa a skill `herdrfy` para trabalhar no Herdr. Carregue a skill
 antes de controlar terminais, painéis, abas, espaços ou outros agentes.
 
-1. **Superfície.** A pessoa informa se está no Herdr TUI ou no Herdr Desktop.
-   No TUI o comando é `herdr`. No Desktop o comando é `hc` (herdr-core), com
-   `herdr-app` para a janela quando ele existe na máquina. Sem essa
-   informação, pergunte uma vez na sessão.
-2. **Localização.** Antes do primeiro comando do Herdr, rode o localizador com
-   a superfície informada e use os IDs que ele devolve:
+1. **Localização.** Antes do primeiro comando do Herdr, rode o localizador e
+   use os IDs que ele devolve:
 
    ```bash
-   {{ONDE}} --superficie desktop   # ou tui
+   {{WHERE}}
    ```
 
-   As variáveis `HERDR_WORKSPACE_ID`, `HERDR_TAB_ID` e `HERDR_PANE_ID` ficam
-   velhas quando o painel muda de lugar.
+   Ele detecta a superfície. As variáveis `HERDR_WORKSPACE_ID`,
+   `HERDR_TAB_ID` e `HERDR_PANE_ID` ficam velhas quando o painel muda de
+   lugar.
+2. **Superfície.** No Herdr TUI o comando é `herdr`. No Herdr Desktop o
+   comando é `hc` (herdr-core), com `herdr-app` para a janela quando ele
+   existe na máquina. Quando a pessoa informar a superfície, repasse com
+   `--surface tui` ou `--surface desktop`. Pergunte uma vez na sessão só
+   quando o localizador responder `Outside Herdr` ou a resposta contrariar o
+   pedido.
 3. **Mesma aba.** Painel novo abre na aba de quem pediu. Aba, espaço ou
    workspace novo só quando a pessoa pedir.
 4. **Agentes com permissões liberadas.** Inicie todo agente pelo comando

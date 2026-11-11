@@ -20,6 +20,17 @@ mesmo comando outra vez. Para remover: `npx skills remove herdrfy -g`.
 
 A skill usa scripts em Node.js 18 ou mais novo. Confira com `node --version`.
 
+Depois de atualizar a skill, rode o script de instruções de novo nos
+projetos que já têm o bloco do Herdrfy (ver
+[Configuração](06-configuracao.md#instruções-do-projeto)).
+
+## Onde a skill fica
+
+O instalador guarda a skill em `~/.agents/skills/herdrfy` (com `-g`) ou em
+`.agents/skills/herdrfy` dentro do projeto, e cria um link em cada pasta de
+agente, como `~/.claude/skills/herdrfy`. Os comandos deste guia usam o
+caminho da instalação global.
+
 ## Instalar o Herdr
 
 Você precisa de ao menos um dos produtos:
@@ -36,15 +47,30 @@ antes de instalar qualquer coisa.
 
 ## Conferir
 
-Peça o diagnóstico ou rode você mesmo, a partir da pasta da skill:
+Peça o diagnóstico ou rode você mesmo:
 
 ```bash
-node scripts/diagnostico.mjs
+node ~/.agents/skills/herdrfy/scripts/doctor.mjs
 ```
 
-A saída mostra binários e versões, servidores em execução, integrações,
-skills, templates e agentes encontrados, e termina com a lista de
-pendências. Cada pendência vem com o comando que a resolve.
+A saída vem em inglês, como a de todos os scripts da skill. Ela mostra
+binários e versões, servidores em execução, integrações, skills, templates e
+agentes, e termina com a lista de pendências (`Pending`). Cada pendência vem
+com o comando que a resolve.
+
+## Templates do herdr-core
+
+Quem usa o Herdr Desktop pode copiar os três templates da skill, que guardam
+o comando completo de cada agente:
+
+```bash
+mkdir -p ~/.config/herdr-core/templates
+cp ~/.agents/skills/herdrfy/assets/templates/*.md ~/.config/herdr-core/templates/
+hc templates
+```
+
+Se já existir um arquivo seu com o mesmo nome na pasta, guarde uma cópia
+antes.
 
 ## Skills oficiais
 

@@ -48,7 +48,7 @@ demais para ler. Respeite a direção que a pessoa pedir. `--no-focus` mantém o
 foco com ela. O ID do painel novo vem em `.result.pane.pane_id`.
 
 Use o ID devolvido pelo localizador como alvo. `--current` só é confiável
-quando o localizador respondeu `variaveisAtualizadas: true`.
+quando o localizador respondeu `envCurrent: true`.
 
 ## Aba e workspace novos, só a pedido
 

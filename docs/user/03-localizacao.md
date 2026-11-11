@@ -4,51 +4,67 @@ Antes de abrir qualquer coisa, o agente precisa saber onde está. O
 localizador responde isso.
 
 ```bash
-node scripts/onde.mjs --superficie desktop
-node scripts/onde.mjs --superficie tui
-node scripts/onde.mjs --json
+node ~/.agents/skills/herdrfy/scripts/where.mjs                     # detecta a superfície
+node ~/.agents/skills/herdrfy/scripts/where.mjs --surface desktop   # ou tui
+node ~/.agents/skills/herdrfy/scripts/where.mjs --json
 ```
+
+A saída vem em inglês.
 
 ## No Desktop
 
 ```text
-Superfície: Herdr Desktop / herdr-core (use hc, não herdr)
-Janela:     herdr-app ausente nesta máquina; abas e painéis saem por rótulos do hc
-Terminal:   t1s em promovaweb / docs
-Espaço:     sp8ecd504c8ef5fec59681282f5b26d8c8
-Aba:        tb7ec6e34ffe93cd49a498cc401f4596ab
-Pasta:      /home/ana/projeto
-Programa:   claude-code (working)
-Vizinho:    t16 codex (idle) em promovaweb / docs
+Surface:   Herdr Desktop / herdr-core (use hc, not herdr)
+Window:    herdr-app not on this machine; tabs and panes go through hc labels
+Terminal:  t1s in promovaweb / docs
+Space:     sp8ecd504c8ef5fec59681282f5b26d8c8
+Tab:       tb7ec6e34ffe93cd49a498cc401f4596ab
+Identity:  ghostty
+Folder:    /home/ana/projeto
+Program:   claude-code (working)
+Neighbor:  t16 codex (idle) in promovaweb / docs
 ```
 
 - **Terminal** é o endereço do agente. Outros agentes usam esse endereço
   para avisar quando terminam.
-- **Espaço** e **Aba** são os identificadores que o agente repete para abrir
+- **Space** e **Tab** são os identificadores que o agente repete para abrir
   um painel na mesma aba.
-- **Vizinho** lista os outros terminais da aba.
+- **Neighbor** lista os outros terminais da aba.
+
+Quando o terminal não pertence a uma aba da janela, as linhas `Space` e
+`Tab` dão lugar a uma linha `Placement`:
+
+```text
+Terminal:  t26 in herdrfy / main
+Placement: shown as "herdrfy / main" but without herdr.space and herdr.tab labels; there is no tab to repeat
+Identity:  herdr-mobile
+```
+
+Nesse caso o agente abre o que você pedir como auxiliar, sem painel, e avisa
+(ver [Superfícies](02-superficies.md#terminal-aberto-fora-da-janela)).
 
 ## No TUI
 
 ```text
-Superfície: Herdr TUI (use herdr, não hc)
-Workspace:  api (w1)
-Aba:        agentes (w1:t2)
-Painel:     w1:p5 com claude
-Pasta:      /home/ana/api
+Surface:   Herdr TUI (use herdr, not hc)
+Workspace: api (w1)
+Tab:       agentes (w1:t2)
+Pane:      w1:p5 running claude
+Folder:    /home/ana/api
 ```
 
 O Herdr TUI grava a posição do painel em variáveis de ambiente quando o
 painel nasce. Se você mover o painel para outra aba ou workspace, as
 variáveis continuam com o valor antigo. O localizador não confia nelas: ele
 sobe a árvore de processos até o servidor do Herdr e procura o painel pelo
-shell. Quando as variáveis estão velhas, a resposta traz um aviso com o ID
-certo.
+shell. Quando as variáveis estão velhas, a resposta traz um aviso
+(`Warning`) com o ID certo.
 
 ## Quando o agente não está na superfície
 
-Se a resposta disser que o processo não é um terminal do core, ou que não
-roda num painel da sessão, o agente está fora daquela superfície. Ele ainda
+Se a resposta disser `this process is not a core terminal`, ou
+`does not run in a pane of this session`, o agente está fora daquela
+superfície. Ele ainda
 consegue operar por endereço, mas avisa você antes de abrir painéis, porque
 não existe "a mesma aba" de referência.
 

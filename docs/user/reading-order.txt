@@ -5,4 +5,4 @@
 04-agentes.md
 05-paineis-e-abas.md
 06-configuracao.md
-07-publicacao.md
+07-problemas-comuns.md

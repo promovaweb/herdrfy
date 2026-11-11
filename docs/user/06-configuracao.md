@@ -45,21 +45,27 @@ Agentes novos não conhecem a skill. Para que todo agente aberto no projeto
 siga as mesmas regras, peça: "grave as instruções do Herdr no AGENTS.md".
 
 ```bash
-node scripts/instrucoes.mjs --check
-node scripts/instrucoes.mjs
+cd /caminho/do/projeto
+node ~/.agents/skills/herdrfy/scripts/instructions.mjs --check
+node ~/.agents/skills/herdrfy/scripts/instructions.mjs
 ```
 
 O bloco entra no `AGENTS.md` e no `CLAUDE.md`, entre dois marcadores:
 
 ```markdown
-<!-- herdrfy:inicio -->
+<!-- herdrfy:start -->
 ...
-<!-- herdrfy:fim -->
+<!-- herdrfy:end -->
 ```
 
 Rodar de novo atualiza só o que está entre eles. O que você escreveu fora
 dos marcadores não muda. Para valer em todos os projetos, use `--global`;
-para tirar, `--remover`.
+para tirar, `--remove`.
+
+Rode o comando de novo depois de atualizar a skill: `--check` responde
+`outdated` nos arquivos que ficaram com o bloco antigo. Blocos gravados antes
+da versão 0.2.0 usavam os marcadores `herdrfy:inicio` e `herdrfy:fim`; o
+script reconhece e regrava com os atuais.
 
 Se o seu `AGENTS.md` já tem regras de Herdr escritas à mão que dizem o
 contrário do bloco, o agente aponta as linhas e pergunta qual fica.
