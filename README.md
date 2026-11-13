@@ -1,66 +1,69 @@
-# Herdrfy
+<p align="center">
+  <a href="https://promovaweb.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://promovaweb.com/promovaweb-logo-dark-586.png">
+      <img alt="Promovaweb" src="https://promovaweb.com/promovaweb-logo-light-586.png" width="240">
+    </picture>
+  </a>
+</p>
 
-[![CI](https://github.com/promovaweb/herdrfy/actions/workflows/ci.yml/badge.svg)](https://github.com/promovaweb/herdrfy/actions/workflows/ci.yml)
-[![Versão](https://img.shields.io/github/v/release/promovaweb/herdrfy?label=vers%C3%A3o)](https://github.com/promovaweb/herdrfy/releases/latest)
-[![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
+<h1 align="center">Herdrfy</h1>
 
-Skill da Promovaweb que ensina um agente de código a orquestrar o
-[Herdr](https://herdr.dev) e os outros agentes que rodam nele, nas duas
-superfícies: o **Herdr TUI** (comando `herdr`) e o **Herdr Desktop**, que roda
-sobre o herdr-core (comandos `hc` e `herdr-app`).
+<p align="center">
+  Ensina o seu agente de código a orquestrar o Herdr e os outros agentes, no Herdr TUI e no Herdr Desktop.
+</p>
 
-Com ela, o agente:
+<p align="center">
+  <a href="https://github.com/promovaweb/herdrfy/releases/latest"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/promovaweb/herdrfy"></a>
+  <a href="LICENSE"><img alt="Licença" src="https://img.shields.io/github/license/promovaweb/herdrfy"></a>
+  <a href="https://github.com/promovaweb/herdrfy/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/promovaweb/herdrfy/actions/workflows/ci.yml/badge.svg"></a>
+</p>
 
-- descobre onde está: terminal, espaço e aba no Desktop; workspace, aba e
-  painel no TUI;
-- abre painéis na mesma aba de quem pediu, e abas, espaços ou workspaces
-  novos quando você pede;
-- inicia Claude Code, Codex, OpenCode e outros agentes com as permissões
-  liberadas, pelo comando completo, sem depender de alias;
-- envia tarefas, lê a tela dos agentes, espera o fim do trabalho e confere
-  o resultado antes de resumir;
-- usa o herdr-core para comandos demorados, arquivos e terminais em outras
-  máquinas;
-- configura o Herdr: binários, skills oficiais, integrações, templates e
-  arquivos de configuração;
-- grava as regras no `AGENTS.md` e no `CLAUDE.md`, para os próximos agentes
-  seguirem o mesmo método.
+<p align="center">
+  <a href="https://promovaweb.com/discord"><img alt="Discord: obter ajuda e conversar com a Comunidade" src="https://img.shields.io/badge/Discord-Obter%20ajuda%20e%20conversar%20com%20a%20Comunidade-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+</p>
 
-## Antes de instalar: permissões liberadas
+<p align="center">
+  <a href="https://promovaweb.com/skills/herdrfy/">Documentação</a> ·
+  <a href="https://promovaweb.com/discord">Discord</a> ·
+  <a href="https://promovaweb.com/planos?utm_source=github&utm_medium=readme&utm_campaign=herdrfy">Planos da Promovaweb</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
-O Herdrfy inicia todo agente com as flags que dispensam os pedidos de
-aprovação:
+## O que é
 
-| Agente | Comando |
-| --- | --- |
-| Claude Code | `claude --permission-mode=auto --dangerously-skip-permissions` |
-| Codex | `codex --yolo --no-daemon` |
-| OpenCode | `opencode --auto` |
+O [Herdr](https://github.com/herdrdev/herdr) mantém terminais e agentes de código vivos e organizados. O Herdrfy é uma skill que ensina o seu agente a trabalhar dentro dele: saber onde está, abrir outro agente ao lado, passar uma tarefa, ler o resultado e encerrar o que abriu.
 
-Nesse modo o agente edita arquivos e roda comandos sem pedir confirmação.
-Use em máquinas e pastas onde isso é aceitável para você. A skill compensa
-com tarefas de escopo escrito (quais arquivos, se pode editar, como avisar o
-fim) e leva para você qualquer pergunta que o agente ainda fizer.
+| Superfície | O que a pessoa vê | Comandos |
+| --- | --- | --- |
+| Herdr TUI | workspaces, abas e painéis dentro de um terminal | `herdr` |
+| Herdr Desktop | janela com espaços, abas e painéis; os terminais vivem no herdr-core | `hc` para terminais e agentes, `herdr-app` para a janela |
 
-## Instalar
+Com a skill instalada, o agente:
+
+- descobre a superfície e a posição dele: terminal, espaço e aba no Desktop; workspace, aba e painel no TUI;
+- abre painéis na mesma aba de quem pediu. Abre aba, espaço ou workspace novo quando a pessoa pede;
+- inicia Claude Code, Codex, OpenCode e outros agentes com as permissões liberadas, pelo comando completo, sem alias de shell;
+- envia tarefas, lê a tela dos agentes, espera o fim do trabalho e confere o resultado antes de resumir;
+- usa o herdr-core para comandos demorados, arquivos e terminais em outras máquinas;
+- configura o Herdr: binários, skills oficiais, integrações, templates e arquivos de configuração;
+- grava as regras no `AGENTS.md` e no `CLAUDE.md`, para os próximos agentes seguirem o mesmo método.
+
+## Instalação
 
 ```bash
 npx skills add promovaweb/herdrfy --skill herdrfy -g
 ```
 
-`-g` instala para todos os seus projetos. Sem `-g`, a skill entra só no
-projeto atual. O instalador pergunta para quais agentes instalar. Para
-responder no próprio comando, liste os agentes com `-a`:
+`-g` instala para todos os seus projetos. Sem `-g`, a skill entra só no projeto atual. O instalador pergunta para quais agentes instalar. Para responder no próprio comando, liste os agentes com `-a`:
 
 ```bash
 npx skills add promovaweb/herdrfy --skill herdrfy -g -a claude-code -a codex -a opencode -y
 ```
 
-Não use `-y` sem `-a`: o instalador cria a skill na pasta de todos os
-agentes que ele conhece, mesmo os que você não tem.
+Não use `-y` sem `-a`: o instalador cria a skill na pasta de todos os agentes que ele conhece, mesmo os que você não tem.
 
-Requisitos: Node.js 18 ou mais novo (para os scripts da skill) e ao menos um
-dos produtos do Herdr instalado. A skill também orienta a instalação deles.
+Requisitos: Node.js 18 ou mais novo, para os scripts da skill, além de ao menos um produto do Herdr instalado. A instalação do Herdr vem dos instaladores de [herdr.dev](https://herdr.dev). A skill orienta o passo a passo.
 
 ### Atualizar e remover
 
@@ -77,8 +80,7 @@ npx skills remove herdrfy -g
 
 ### Templates do herdr-core (opcional)
 
-Quem usa o Herdr Desktop pode instalar os três templates da skill, que
-guardam o comando completo de cada agente:
+Quem usa o Herdr Desktop pode copiar os três templates da skill, que guardam o comando completo de cada agente:
 
 ```bash
 mkdir -p ~/.config/herdr-core/templates
@@ -86,19 +88,22 @@ cp ~/.agents/skills/herdrfy/assets/templates/*.md ~/.config/herdr-core/templates
 hc run --bg --name revisor claude-yolo "Revise só src/x.ts."
 ```
 
-## Usar
+## Primeiros passos
 
-Peça ao agente o que você quer. Ele detecta a superfície; se você disser
-"estou no TUI" ou "estou no Desktop", a sua frase vale mais que a detecção.
+Peça ao agente o que você quer. Ele detecta a superfície. Se você disser que está no TUI ou no Desktop, a sua frase vale mais que a detecção.
 
-- "Use herdrfy para abrir um Codex ao lado e pedir uma revisão do diff
-  atual."
-- "Estou no TUI. Use herdrfy para configurar o Herdr neste projeto e gravar
-  as instruções no AGENTS.md."
-- "Use herdrfy para abrir três agentes, um por pasta de `packages/`, e me
-  trazer um resumo do que cada um encontrou."
+```text
+Use herdrfy para abrir um Codex ao lado e pedir uma revisão do diff atual.
+```
 
-O agente começa pelo localizador:
+O agente começa pelo localizador. Quando o pedido for configurar a máquina, ele roda o diagnóstico antes:
+
+```bash
+node ~/.agents/skills/herdrfy/scripts/where.mjs
+node ~/.agents/skills/herdrfy/scripts/doctor.mjs
+```
+
+O diagnóstico lista binários, servidores, integrações, skills, templates e agentes, com as pendências e o comando de cada uma. O localizador responde onde o agente roda:
 
 ```text
 Surface:   Herdr Desktop / herdr-core (use hc, not herdr)
@@ -110,7 +115,15 @@ Folder:    /home/ana/projeto
 Program:   claude-code (working)
 ```
 
-E termina com um relato curto, neste formato:
+## Uso
+
+Peça em português, com o resultado que você espera:
+
+- "Use herdrfy para abrir um Codex ao lado e pedir uma revisão do diff atual."
+- "Estou no TUI. Use herdrfy para configurar o Herdr neste projeto e gravar as instruções no AGENTS.md."
+- "Use herdrfy para abrir três agentes, um por pasta de `packages/`. Depois me traga um resumo do que cada um encontrou."
+
+No fim, o agente relata o que abriu, o resultado de cada agente e o que ficou pendente:
 
 ```text
 Superfície: Herdr Desktop, terminal t1s em promovaweb / docs.
@@ -120,58 +133,86 @@ Encerrado: revisor. Nada ficou aberto.
 Pendente: nada.
 ```
 
-## O que vem no repositório
+### Scripts à mão
 
-| Caminho | Conteúdo |
+Os scripts também rodam fora do agente. Eles só leem o Herdr e aceitam `--help`:
+
+```bash
+node ~/.agents/skills/herdrfy/scripts/where.mjs --surface desktop
+node ~/.agents/skills/herdrfy/scripts/doctor.mjs --json
+node ~/.agents/skills/herdrfy/scripts/instructions.mjs --check
+```
+
+## Uso com agentes
+
+O agente lê [`skills/herdrfy/SKILL.md`](skills/herdrfy/SKILL.md) e as referências da pasta ao lado. O manual embutido em cada binário acompanha a versão instalada, então vale mais que a skill quando houver diferença de sintaxe: `herdr --skill`, `hc --skill` e `herdr-app --skill`.
+
+O Herdr distribui duas skills próprias: `herdr` (TUI) e `herdr-core` (Desktop e core). O Herdrfy não as substitui nem copia o texto delas. Ele reúne o método de trabalho da Promovaweb sobre as duas superfícies.
+
+Todo agente é iniciado pelo comando completo, com as permissões liberadas:
+
+| Agente | Comando |
 | --- | --- |
-| [`skills/herdrfy/SKILL.md`](skills/herdrfy/SKILL.md) | regras, passos, marcos e saída da skill |
-| [`skills/herdrfy/references/`](skills/herdrfy/references/) | superfícies, agentes, herdr-core, Desktop, TUI, orquestração, configuração e instruções |
-| [`skills/herdrfy/scripts/where.mjs`](skills/herdrfy/scripts/where.mjs) | localizador: onde o agente roda no Herdr |
-| [`skills/herdrfy/scripts/doctor.mjs`](skills/herdrfy/scripts/doctor.mjs) | estado da instalação e pendências |
-| [`skills/herdrfy/scripts/instructions.mjs`](skills/herdrfy/scripts/instructions.mjs) | bloco de instruções no `AGENTS.md` e no `CLAUDE.md` |
-| [`skills/herdrfy/assets/`](skills/herdrfy/assets/) | texto do bloco e templates do herdr-core |
-| [`docs/user/`](docs/user/README.md) | guia de uso para pessoas |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | validação, versão e publicação |
-| [`CHANGELOG.md`](CHANGELOG.md) | histórico das versões |
+| Claude Code | `claude --permission-mode=auto --dangerously-skip-permissions` |
+| Codex | `codex --yolo --no-daemon` |
+| OpenCode | `opencode --auto` |
 
-Os scripts são escritos em inglês, só leem o Herdr e também rodam à mão:
+Nesse modo o agente edita arquivos e roda comandos sem pedir confirmação. Use em máquinas e pastas onde isso é aceitável para você. A skill compensa com tarefas de escopo escrito e leva para você qualquer pergunta que o agente ainda fizer.
+
+Para os próximos agentes seguirem o mesmo método, grave o bloco de instruções no projeto:
 
 ```bash
-node skills/herdrfy/scripts/where.mjs --surface desktop
-node skills/herdrfy/scripts/doctor.mjs
-node skills/herdrfy/scripts/instructions.mjs --check
-node skills/herdrfy/scripts/where.mjs --help
+cd /caminho/do/projeto
+node ~/.agents/skills/herdrfy/scripts/instructions.mjs --check
+node ~/.agents/skills/herdrfy/scripts/instructions.mjs
 ```
 
-## Guia
+O bloco fica entre os marcadores `<!-- herdrfy:start -->` e `<!-- herdrfy:end -->` no `AGENTS.md` e no `CLAUDE.md`. Ele é trocado a cada execução sem tocar no resto do arquivo. Com `--global`, ele vai para os arquivos globais dos agentes.
 
-O guia em [`docs/user/`](docs/user/README.md) explica, para quem usa, as duas
-superfícies, a localização, os agentes, os painéis, a configuração e os
-[problemas comuns](docs/user/07-problemas-comuns.md).
+## Saída para scripts
 
-## Desenvolvimento
+Os três scripts aceitam `--json` e devolvem a resposta em inglês, como os binários do Herdr.
 
-```bash
-npm run validate
-```
+| Script | Código 0 | Código 1 | Código 2 |
+| --- | --- | --- | --- |
+| `where.mjs` | resposta obtida | não conseguiu ler o Herdr | argumento inválido |
+| `doctor.mjs` | conferência feita | não se aplica | argumento inválido |
+| `instructions.mjs` | bloco gravado ou atual | `--check` achou arquivo sem o bloco atual | argumento inválido |
 
-O comando confere a estrutura da skill, os links, o texto de instrução, os
-comandos dos agentes, a versão no changelog e roda os testes dos scripts.
-Não há dependências a instalar. As regras para agentes estão em
-[`AGENTS.md`](AGENTS.md), e a validação e o fluxo de publicação, em
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
+## Documentação
 
-## Relação com as skills oficiais
+- Guia de uso no site: <https://promovaweb.com/skills/herdrfy/>.
+- Guia em Markdown: [`docs/user/`](docs/user/README.md), com a visão geral, a instalação, as superfícies, a localização, os agentes, os painéis, a configuração e os problemas comuns.
+- Manual embutido: `node ~/.agents/skills/herdrfy/scripts/where.mjs --help` e os demais scripts com `--help`.
+- Portal do Herdr na Promovaweb: <https://promovaweb.com/herdr/>.
 
-O Herdr distribui duas skills próprias: `herdr` (TUI) e `herdr-core`
-(Desktop e core). O Herdrfy não as substitui nem copia o texto delas. Ele
-reúne o método de trabalho da Promovaweb sobre as duas superfícies e manda o
-agente ler o manual embutido em cada binário (`herdr --skill`, `hc --skill`,
-`herdr-app --skill`) quando precisa da sintaxe exata da versão instalada.
+## Feito com
 
-Herdr, herdr-core e Herdr Desktop são projetos de
-[herdrdev](https://github.com/herdrdev). Este repositório não é afiliado a
-eles.
+| Projeto | Para quê |
+| --- | --- |
+| [Herdr](https://github.com/herdrdev/herdr) | multiplexador de terminal para agentes de código, no Herdr TUI |
+| [herdr-core](https://github.com/herdrdev/herdr-core) | terminais dos agentes no Desktop |
+| [Herdr Desktop](https://github.com/herdrdev/herdr-app) | janela do Desktop |
+| [Node.js](https://github.com/nodejs/node) | execução dos scripts da skill |
+| [Skills CLI](https://github.com/vercel-labs/skills) | instalação da skill com `npx skills` |
+
+Herdr, herdr-core e Herdr Desktop são projetos de [herdrdev](https://github.com/herdrdev). Este repositório não é afiliado a eles.
+
+## Comunidade e suporte
+
+- **Discord:** [obter ajuda e conversar com a Comunidade](https://promovaweb.com/discord).
+- **Bugs e pedidos:** abra uma [issue](https://github.com/promovaweb/herdrfy/issues) com a versão, o sistema operacional e o passo a passo para reproduzir.
+- **Novidades:** acompanhe o [CHANGELOG](CHANGELOG.md) e as [releases](https://github.com/promovaweb/herdrfy/releases).
+
+## Contribuir
+
+O repositório aceita correções de texto, referências e scripts. Leia o [`CONTRIBUTING.md`](CONTRIBUTING.md) antes de abrir uma issue ou um pull request.
+
+## Promovaweb
+
+O Herdrfy é mantido pela [Promovaweb](https://promovaweb.com), comunidade de co-working digital onde profissionais aprendem a construir, automatizar e gerir negócios de tecnologia e IA com aulas ao vivo, Co-works e revisão de projetos reais.
+
+Quer usar o Herdrfy em projetos de verdade, com acompanhamento? Conheça os [planos da Promovaweb](https://promovaweb.com/planos?utm_source=github&utm_medium=readme&utm_campaign=herdrfy).
 
 ## Licença
 

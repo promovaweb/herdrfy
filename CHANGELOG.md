@@ -3,6 +3,14 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.2.2](https://github.com/promovaweb/herdrfy/compare/v0.2.1...v0.2.2) (2026-11-13)
+
+### Documentação
+
+- `README.md` reorganizado para quem usa a skill: cabeçalho com o logo da Promovaweb, badges, banner do Discord e links para a documentação em <https://promovaweb.com/skills/herdrfy/>, para os planos e para o changelog. Ganha as seções Saída para scripts, Feito com (Herdr, herdr-core, Herdr Desktop, Node.js e Skills CLI, com os repositórios), Comunidade e suporte e Promovaweb.
+- `CONTRIBUTING.md` concentra o que é de quem contribui: ambiente, organização do código, fluxo de trabalho, regras, validação, commits e releases. A estrutura de pastas e os comandos de desenvolvimento saem do README.
+- `.markdownlint.json` libera os elementos HTML do cabeçalho desliga a regra do primeiro heading e aceita títulos repetidos em versões diferentes do changelog.
+
 ## [0.2.1](https://github.com/promovaweb/herdrfy/compare/v0.2.0...v0.2.1) (2026-11-13)
 
 Esta versão muda o texto do bloco de instruções. Depois de atualizar a skill,
