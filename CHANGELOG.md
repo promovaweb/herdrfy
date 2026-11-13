@@ -3,6 +3,34 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.2.1](https://github.com/promovaweb/herdrfy/compare/v0.2.0...v0.2.1) (2026-11-13)
+
+Esta versão muda o texto do bloco de instruções. Depois de atualizar a skill,
+rode `node ~/.agents/skills/herdrfy/scripts/instructions.mjs` em cada projeto
+com o bloco (e com `--global`, se gravou os arquivos globais), para receber o
+aviso sobre terminal do herdr-core.
+
+### Correções
+
+- O localizador decide a superfície pela árvore de processos, do ancestral mais próximo para cima: processo `herdr-core` dá Desktop, processo `herdr` dá TUI. As variáveis de ambiente só decidem quando a árvore não tem nenhuma das duas. Um terminal do core que herdou `HERDR_ENV=1` e `HERDR_PANE_ID` de um TUI anterior deixava de ser lido como Desktop quando o ambiente vinha primeiro, e a aba pedida abria no TUI.
+- A resposta do localizador traz `detection` com `process`, `env` e `inheritedEnv` nas duas superfícies e fora do Herdr. A saída em texto abre com uma linha `Warning:` quando as variáveis da outra superfície estão herdadas, dizendo qual comando chega onde.
+- `inheritedEnv` inclui `HERDR_SOCKET_PATH` e `HC_TERMINAL_SOCKET`, as variáveis que levam os comandos `herdr` e `hc` aos seus servidores, e é medido contra a superfície da árvore de processos, não contra a pedida em `--surface`.
+- `--surface` que contraria a árvore de processos mantém a superfície pedida, marca `mismatch: true` e avisa no texto que os comandos dessa superfície não chegam onde o agente roda.
+- Na busca do TUI, quando a árvore de processos indica um terminal do core, o painel vindo de `HERDR_PANE_ID` não é aceito: a resposta é `found: false`, porque esse painel pertence a um TUI que não hospeda este processo.
+
+- Conferido em sessão real do TUI aberta dentro de um terminal do core: o painel herdou `HC_TERMINAL_ID`, e o localizador respondeu TUI e achou o painel pelo processo. A 0.2.0 respondia Desktop nesse caso.
+
+### Documentação
+
+- `SKILL.md`, regras 1 a 4: o localizador decide pela árvore de processos, num terminal do core `herdr` não serve mesmo com `HERDR_ENV=1`, e a conferência de `detection` e `mismatch` vem antes de criar aba, painel ou espaço.
+- `references/superficies.md`: ordem de detecção nova, o objeto `detection`, o campo `mismatch` e os exemplos de JSON com os campos novos.
+- `assets/instrucoes-bloco.md`: o item da superfície avisa que, num terminal do herdr-core, `herdr` chega ao TUI e não à janela.
+- Guia: `docs/user/02-superficies.md` explica por que a informação da pessoa importa quando as variáveis das duas superfícies convivem no mesmo terminal, e `docs/user/07-problemas-comuns.md` ganha a seção "Pedi uma aba no Desktop e ela abriu no TUI", com a causa e o que o agente faz agora.
+
+### Build
+
+- Testes do localizador com um `/proc` falso montado em pasta temporária: terminal do core com variáveis herdadas, painel do TUI com `HC_TERMINAL_ID` herdado, `--surface tui` dentro de um terminal do core e árvore sem `herdr` nem `herdr-core`. O localizador aceita `HERDRFY_PROC_ROOT` e `HERDRFY_PID` para isso, e os testes que dependem do ambiente usam uma tabela de processos vazia. A suíte passa de 18 para 22 testes.
+
 ## [0.2.0](https://github.com/promovaweb/herdrfy/compare/v0.1.3...v0.2.0) (2026-11-11)
 
 Esta versão troca nomes de scripts, opções, chaves do JSON e marcadores.

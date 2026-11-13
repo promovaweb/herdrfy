@@ -8,7 +8,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, lstatSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
@@ -26,11 +26,29 @@ function run(script, args, env = process.env) {
   return { code: r.status, out: r.stdout, err: r.stderr };
 }
 
+/** Empty process table, so the real one of this machine does not interfere. */
+const emptyProc = mkdtempSync(join(tmpdir(), "herdrfy-proc-empty-"));
+
 /** Returns a copy of the environment without any Herdr variable. */
 function cleanEnv(extra = {}) {
   const env = { ...process.env };
-  for (const key of Object.keys(env)) if (key.startsWith("HC_") || key.startsWith("HERDR_")) delete env[key];
-  return { ...env, ...extra };
+  for (const key of Object.keys(env)) {
+    if (key.startsWith("HC_") || key.startsWith("HERDR_") || key.startsWith("HERDRFY_")) delete env[key];
+  }
+  return { ...env, HERDRFY_PROC_ROOT: emptyProc, ...extra };
+}
+
+/**
+ * Creates a fake process table: `tree` maps a pid to [name, ppid]. Each pid
+ * gets a `<pid>/stat` file in the real format, `123 (name) S 1 ...`.
+ */
+function fakeProc(tree) {
+  const dir = mkdtempSync(join(tmpdir(), "herdrfy-proc-"));
+  for (const [pid, [name, ppid]] of Object.entries(tree)) {
+    mkdirSync(join(dir, pid));
+    writeFileSync(join(dir, pid, "stat"), `${pid} (${name}) S ${ppid} ${pid} ${pid} 0 -1 4194560 0 0 0 0 0 0 0 20 0 1 0 0 0 0 0\n`);
+  }
+  return dir;
 }
 
 /**
@@ -153,7 +171,7 @@ test("all scripts: an unknown argument exits 2", () => {
 test("where: outside Herdr answers a null surface with code 0", () => {
   const r = run(where, ["--json"], cleanEnv());
   assert.equal(r.code, 0);
-  assert.deepEqual(JSON.parse(r.out), { surface: null, found: false });
+  assert.deepEqual(JSON.parse(r.out), { surface: null, found: false, detection: { process: null, env: null, inheritedEnv: [] } });
 });
 
 test("where: an invalid or missing surface exits 2", () => {
@@ -240,6 +258,99 @@ test("where: a failing hc exits 1", { skip: !unix }, () => {
   const r = run(where, [], cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HC_TERMINAL_ID: "t1" }));
   assert.equal(r.code, 1);
   assert.match(r.err, /Could not query Herdr/u);
+});
+
+test("where: core terminal with inherited TUI variables answers desktop", { skip: !unix }, () => {
+  const bin = fakeCli("hc", {
+    "get t1": { address: "t1", cwd: "/work", labels: { "herdr.space": "sp1", "herdr.tab": "tb1", where: "api / docs" }, state: "live" },
+    ls: { terminals: [{ address: "t1" }, { address: "t2", agent: "codex", status: "idle" }] },
+  });
+  const proc = fakeProc({ 500: ["zsh", 501], 501: ["herdr-core", 502], 502: ["systemd", 1] });
+  const env = cleanEnv({
+    PATH: `${bin}:/usr/bin:/bin`,
+    HC_TERMINAL_ID: "t1",
+    HERDR_ENV: "1",
+    HERDR_PANE_ID: "w0:p1V",
+    HERDRFY_PROC_ROOT: proc,
+    HERDRFY_PID: "500",
+  });
+  const data = JSON.parse(run(where, ["--json"], env).out);
+  assert.equal(data.surface, "desktop");
+  assert.equal(data.found, true);
+  assert.deepEqual(data.detection, { process: "desktop", env: "desktop", inheritedEnv: ["HERDR_ENV", "HERDR_PANE_ID"] });
+  const text = run(where, [], env).out;
+  assert.match(text, /^Surface: +Herdr Desktop/mu);
+  assert.match(text, /^Warning: +HERDR_ENV=1, HERDR_PANE_ID=w0:p1V came from a Herdr TUI/mu);
+});
+
+test("where: TUI pane with an inherited HC_TERMINAL_ID answers tui", { skip: !unix }, () => {
+  const bin = fakeCli("herdr", {
+    "workspace list": { result: { workspaces: [{ workspace_id: "w1", label: "api", tab_count: 1, pane_count: 1 }] } },
+    "pane list": { result: { panes: [{ pane_id: "w1:p5", workspace_id: "w1", tab_id: "w1:t1", cwd: "/work", agent: "claude" }] } },
+    "pane process-info": { result: { process_info: { shell_pid: 600 } } },
+    "tab list": { result: { tabs: [{ tab_id: "w1:t1", label: "agents" }] } },
+  });
+  const proc = fakeProc({ 600: ["zsh", 601], 601: ["herdr", 602], 602: ["systemd", 1] });
+  const env = cleanEnv({
+    PATH: `${bin}:/usr/bin:/bin`,
+    HC_TERMINAL_ID: "t1",
+    HERDR_ENV: "1",
+    HERDR_PANE_ID: "w1:p5",
+    HERDRFY_PROC_ROOT: proc,
+    HERDRFY_PID: "600",
+  });
+  const data = JSON.parse(run(where, ["--json"], env).out);
+  assert.equal(data.surface, "tui");
+  assert.equal(data.found, true);
+  assert.equal(data.method, "processes");
+  assert.deepEqual(data.detection, { process: "tui", env: "desktop", inheritedEnv: ["HC_TERMINAL_ID"] });
+  assert.match(run(where, [], env).out, /^Warning: +HC_TERMINAL_ID=t1 came from a herdr-core terminal/mu);
+});
+
+test("where: --surface tui inside a core terminal reports mismatch and no pane", { skip: !unix }, () => {
+  const bin = fakeCli("herdr", {
+    "workspace list": { result: { workspaces: [{ workspace_id: "w1", label: "api", tab_count: 1, pane_count: 1 }] } },
+    "pane list": { result: { panes: [{ pane_id: "w1:p5", workspace_id: "w1", tab_id: "w1:t1" }] } },
+    "tab list": { result: { tabs: [{ tab_id: "w1:t1", label: "agents" }] } },
+  });
+  const proc = fakeProc({ 700: ["zsh", 701], 701: ["herdr-core", 702], 702: ["systemd", 1] });
+  const env = cleanEnv({
+    PATH: `${bin}:/usr/bin:/bin`,
+    HERDR_ENV: "1",
+    HERDR_PANE_ID: "w1:p5",
+    HERDRFY_PROC_ROOT: proc,
+    HERDRFY_PID: "700",
+  });
+  const data = JSON.parse(run(where, ["--json", "--surface", "tui"], env).out);
+  assert.equal(data.surface, "tui");
+  assert.equal(data.found, false);
+  assert.equal(data.mismatch, true);
+  assert.equal(data.detection.process, "desktop");
+  // Inherited variables follow the process tree, not the requested surface.
+  assert.deepEqual(data.detection.inheritedEnv, ["HERDR_ENV", "HERDR_PANE_ID"]);
+  const text = run(where, ["--surface", "tui"], env).out;
+  assert.match(text, /^Warning: +this process runs under Herdr Desktop/mu);
+  assert.match(text, /came from a Herdr TUI; herdr commands from here reach the TUI/u);
+});
+
+test("where: without herdr or herdr-core in the tree the variables decide", { skip: !unix }, () => {
+  const bin = fakeCli("herdr", {
+    "workspace list": { result: { workspaces: [{ workspace_id: "w1", label: "api", tab_count: 1, pane_count: 1 }] } },
+    "pane list": { result: { panes: [{ pane_id: "w1:p5", workspace_id: "w1", tab_id: "w1:t1" }] } },
+    "tab list": { result: { tabs: [{ tab_id: "w1:t1", label: "agents" }] } },
+  });
+  const proc = fakeProc({ 800: ["zsh", 801], 801: ["systemd", 1] });
+  const env = cleanEnv({
+    PATH: `${bin}:/usr/bin:/bin`,
+    HERDR_ENV: "1",
+    HERDR_PANE_ID: "w1:p5",
+    HERDRFY_PROC_ROOT: proc,
+    HERDRFY_PID: "800",
+  });
+  const data = JSON.parse(run(where, ["--json"], env).out);
+  assert.equal(data.surface, "tui");
+  assert.equal(data.method, "env");
+  assert.deepEqual(data.detection, { process: null, env: "tui", inheritedEnv: [] });
 });
 
 test("doctor: answers JSON with the expected sections", () => {

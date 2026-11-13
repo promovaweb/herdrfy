@@ -21,18 +21,49 @@ além da janela do Desktop. Em todos esses casos a superfície continua sendo
 
 ## Quem define a superfície
 
-Rode o localizador sem opções: ele detecta a superfície pelo ambiente. A
-ordem de detecção é:
+Rode o localizador sem opções: ele decide a superfície pela árvore de
+processos e só depois pelas variáveis. A ordem de detecção é:
 
-1. `HC_TERMINAL_ID` presente: Desktop. Vence sempre, porque um terminal do
-   herdr-core pode herdar `HERDR_ENV=1` e IDs de um Herdr TUI que rodava
-   antes na mesma máquina.
-2. `HERDR_ENV=1` sem `HC_TERMINAL_ID`: TUI.
+1. Árvore de processos, do processo atual para os ancestrais. O ancestral
+   mais próximo decide: processo de nome `herdr-core` dá Desktop, processo
+   de nome `herdr` dá TUI. O mais próximo vence para cobrir um TUI iniciado
+   dentro de um terminal do core e o contrário.
+2. Sem `herdr-core` nem `herdr` na árvore, ou sem `/proc` (macOS e Windows):
+   `HC_TERMINAL_ID` presente dá Desktop e vence `HERDR_ENV=1`, que dá TUI.
 3. Nenhum dos dois: fora do Herdr.
+
+As variáveis sozinhas enganam porque um terminal do herdr-core herda
+`HERDR_ENV=1`, `HERDR_WORKSPACE_ID`, `HERDR_TAB_ID` e `HERDR_PANE_ID` de um
+TUI que rodava antes na máquina, e um painel do TUI aberto dentro de um
+terminal do core herda `HC_TERMINAL_ID`.
+
+A resposta traz o objeto `detection` nas duas superfícies e fora do Herdr:
+
+```json
+"detection": {
+  "process": "desktop",
+  "env": "desktop",
+  "inheritedEnv": ["HERDR_ENV", "HERDR_PANE_ID"]
+}
+```
+
+- `process` é a superfície que a árvore de processos deu, ou `null`.
+- `env` é a superfície que as variáveis dariam sozinhas, ou `null`.
+- `inheritedEnv` lista as variáveis da outra superfície presentes no
+  ambiente, medidas contra a superfície da árvore de processos:
+  `HERDR_ENV`, `HERDR_SOCKET_PATH`, `HERDR_PANE_ID`, `HERDR_WORKSPACE_ID`
+  e `HERDR_TAB_ID` num terminal do core, `HC_TERMINAL_ID` e
+  `HC_TERMINAL_SOCKET` num painel do TUI. `HERDR_SOCKET_PATH` é a que leva o comando `herdr` até o servidor
+  do TUI. Lista vazia quando não há nenhuma. A saída em texto abre com uma linha
+  `Warning:` nesse caso.
 
 Quando a pessoa informar ("estou no TUI", "estou no Desktop"), a palavra dela
 vale mais que a detecção: passe com `--surface`. O script aceita os
-sinônimos `core` e `hc` para `desktop`, e `herdr` para `tui`.
+sinônimos `core` e `hc` para `desktop`, e `herdr` para `tui`. Se a superfície
+pedida contrariar `detection.process`, a resposta mantém a superfície pedida
+e acrescenta `"mismatch": true`, e o texto abre com um `Warning:` dizendo que
+os comandos dessa superfície não chegam onde o agente roda. Nesse caso,
+confirme com a pessoa antes de criar aba, painel ou espaço.
 
 Pergunte uma vez na sessão quando a resposta for `Outside Herdr` e o pedido
 envolver o Herdr, ou quando a pessoa citar uma superfície diferente da
@@ -73,7 +104,8 @@ inválido.
     "status": "working",
     "parent": null
   },
-  "neighbors": [{ "id": "t16", "program": "codex", "status": "idle" }]
+  "neighbors": [{ "id": "t16", "program": "codex", "status": "idle" }],
+  "detection": { "process": "desktop", "env": "desktop", "inheritedEnv": [] }
 }
 ```
 
@@ -121,7 +153,8 @@ usa para encaixar painéis. Não invente os rótulos a partir do texto de
   "pane": { "id": "w1:p5", "cwd": "/home/ana/api", "agent": "claude" },
   "envCurrent": true,
   "method": "processes",
-  "workspaces": [{ "id": "w1", "label": "api", "tabs": 2, "panes": 4 }]
+  "workspaces": [{ "id": "w1", "label": "api", "tabs": 2, "panes": 4 }],
+  "detection": { "process": "tui", "env": "tui", "inheritedEnv": [] }
 }
 ```
 
@@ -130,7 +163,13 @@ usa para encaixar painéis. Não invente os rótulos a partir do texto de
 - `method: "processes"` significa que o painel foi achado pelo shell do
   próprio processo. `method: "env"` significa que o script caiu nas
   variáveis de ambiente, sem conferir; trate a posição como provável e
-  confirme com `herdr pane get <id>`.
+  confirme com `herdr pane get <id>`. Quando `detection.process` for
+  `desktop`, o script não usa essa queda para as variáveis: um terminal do
+  core não roda num painel deste TUI, e as variáveis vêm de um TUI anterior.
+- `mismatch: true` aparece só quando `--surface` contraria a árvore de
+  processos. A posição continua sendo procurada na superfície pedida, e o
+  texto abre com o aviso de que os comandos dela não chegam onde o agente
+  roda.
 - `envCurrent: false` avisa que `HERDR_PANE_ID` aponta para um ID antigo.
   Use o ID devolvido.
 - `found: false`: este processo não roda num painel da sessão padrão. Opere

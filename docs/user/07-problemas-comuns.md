@@ -51,6 +51,22 @@ Diga qual é a sua: "estou no TUI" ou "estou no Desktop". Um terminal pode
 carregar sinais das duas ao mesmo tempo, e a sua frase vale mais que a
 detecção.
 
+## Pedi uma aba no Desktop e ela abriu no TUI
+
+Aconteceu porque o terminal do agente carregava `HERDR_ENV=1` e um
+`HERDR_PANE_ID` de um Herdr TUI que rodava antes na máquina. Com o servidor
+do TUI no ar, o comando `herdr` do agente funcionou e criou a aba no TUI, não
+na janela do Desktop. O mesmo vale ao contrário: um painel do TUI aberto
+dentro de um terminal do core herda `HC_TERMINAL_ID`.
+
+O agente agora decide a superfície pela árvore de processos: processo
+`herdr-core` é Desktop, processo `herdr` é TUI. Ele nunca usa `herdr` num
+terminal do core, mesmo com `HERDR_ENV=1`. O localizador mostra o resultado
+em `detection` e abre a saída em texto com uma linha `Warning:` quando as
+variáveis da outra superfície estão herdadas. Se você disser a superfície e
+ela contrariar a árvore, a resposta traz `mismatch: true` e o aviso de que
+os comandos dela não chegam onde o agente roda.
+
 ## O bloco de instruções ficou velho
 
 Depois de atualizar a skill, rode na pasta do projeto:

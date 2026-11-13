@@ -12,18 +12,34 @@ produto de superfície.
 
 ## Informe a sua
 
-O agente detecta a superfície pelo ambiente do terminal. Você pode dizer no
-pedido "estou no TUI" ou "estou no Desktop": a sua frase vale mais que a
-detecção. Quando a detecção falha ou contraria o pedido, ele pergunta uma vez
-e guarda a resposta pelo resto da sessão.
+O agente detecta a superfície pela árvore de processos do terminal e, quando
+ela não basta, pelo ambiente. Você pode dizer no pedido "estou no TUI" ou
+"estou no Desktop": a sua frase vale mais que a detecção. Quando a detecção
+falha ou contraria o pedido, ele pergunta uma vez e guarda a resposta pelo
+resto da sessão.
 
 ## Por que informar
 
 Um terminal pode carregar sinais das duas superfícies ao mesmo tempo. Isso
 acontece, por exemplo, quando o herdr-core foi iniciado de dentro de um
-painel do Herdr TUI: os terminais novos herdam as variáveis antigas. O
-agente trata `HC_TERMINAL_ID` como sinal mais forte, mas a sua informação
-vale mais que qualquer detecção.
+painel do Herdr TUI: os terminais novos herdam `HERDR_ENV=1` e os endereços
+antigos (`HERDR_WORKSPACE_ID`, `HERDR_TAB_ID`, `HERDR_PANE_ID`). Com o
+servidor do TUI rodando na mesma máquina, um comando `herdr` disparado dali
+funciona e cria a aba no TUI, embora a pessoa esteja olhando a janela do
+Desktop. É o caso que já apareceu: a pessoa pediu uma aba no Desktop e ela
+abriu no TUI.
+
+Por isso o agente decide a superfície pela árvore de processos, não pelas
+variáveis. Ele sobe do próprio processo até o ancestral mais próximo:
+processo `herdr-core` é Desktop, processo `herdr` é TUI. As variáveis só
+decidem quando a árvore não tem nenhuma das duas. A resposta do localizador
+mostra os dois lados no objeto `detection` e avisa com `Warning:` quando as
+variáveis da outra superfície estão herdadas.
+
+A sua informação continua valendo mais que qualquer detecção. Quando ela
+contraria a árvore de processos, o localizador mantém a superfície que você
+disse, marca `mismatch: true` e avisa que os comandos dela não chegam onde o
+agente roda. Se isso acontecer, diga onde você está de fato.
 
 ## Terminal aberto fora da janela
 

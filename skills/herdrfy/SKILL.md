@@ -52,23 +52,31 @@ arquivos; qualquer um serve.
 ## Regras
 
 1. **O localizador detecta, a pessoa confirma.** Rode o localizador sem
-   opções: ele detecta a superfície. Quando a pessoa disser se está no TUI
-   ou no Desktop, a palavra dela vale mais: passe com `--surface`. Pergunte
-   uma vez na sessão só quando a resposta for `Outside Herdr` ou contrariar
-   o pedido, e guarde a resposta.
+   opções: ele decide a superfície pela árvore de processos, do ancestral
+   mais próximo para cima, e só usa as variáveis de ambiente quando a árvore
+   não tem `herdr-core` nem `herdr`. Quando a pessoa disser se está no TUI
+   ou no Desktop, a palavra dela vale mais: passe com `--surface`, confira
+   `detection` e `mismatch` na resposta e avise quando a superfície pedida
+   não for onde o agente roda. Pergunte uma vez na sessão só quando a
+   resposta for `Outside Herdr` ou contrariar o pedido, e guarde a resposta.
 2. **Localize antes de agir.** Rode `node <skill>/scripts/where.mjs` antes
    do primeiro comando do Herdr e depois de qualquer mudança de lugar. Use
    os IDs que ele devolve. Não use `HERDR_WORKSPACE_ID`, `HERDR_TAB_ID` e
    `HERDR_PANE_ID` como endereço: elas envelhecem quando o painel é movido e
    aparecem herdadas em terminais do herdr-core.
 3. **Um comando por superfície.** No Desktop use `hc` e `herdr-app`, nunca
-   `herdr`. No TUI use `herdr`, nunca `hc`. `HC_TERMINAL_ID` presente indica
-   terminal do herdr-core mesmo com `HERDR_ENV=1` no ambiente.
-4. **Painel novo na aba de quem pediu.** Todo painel novo abre na mesma aba
-   do agente que recebeu o pedido. Aba, espaço ou workspace novo só quando a
-   pessoa pedir com essas palavras. No Desktop, repita no terminal novo os
-   rótulos `herdr.space` e `herdr.tab` do seu terminal. No TUI, divida o seu
-   painel.
+   `herdr`. No TUI use `herdr`, nunca `hc`. Num terminal do herdr-core,
+   `herdr` não serve mesmo com `HERDR_ENV=1` no ambiente: o comando chega ao
+   servidor do TUI e cria a aba ou o painel lá, não na janela onde a pessoa
+   está. A árvore de processos vale mais que as variáveis, e o localizador
+   informa `detection.process`, `detection.env` e as variáveis herdadas em
+   `detection.inheritedEnv`.
+4. **Painel novo na aba de quem pediu.** Antes de criar aba, painel ou
+   espaço, confira `detection` e `mismatch` no localizador. Todo painel novo
+   abre na mesma aba do agente que recebeu o pedido. Aba, espaço ou
+   workspace novo só quando a pessoa pedir com essas palavras. No Desktop,
+   repita no terminal novo os rótulos `herdr.space` e `herdr.tab` do seu
+   terminal. No TUI, divida o seu painel.
 5. **Sem aba, sem rótulo inventado.** Quando o localizador responder
    `placement` diferente de `tab`, o seu terminal não tem aba para repetir.
    Abra o terminal novo sem rótulos, como auxiliar, e diga isso à pessoa

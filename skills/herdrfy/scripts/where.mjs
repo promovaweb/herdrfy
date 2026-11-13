@@ -14,10 +14,18 @@
  *
  * `--surface` also accepts `core` and `hc` for desktop, and `herdr` for tui.
  *
- * Detection without `--surface`: `HC_TERMINAL_ID` means a herdr-core terminal
- * and always wins, because core terminals can inherit `HERDR_ENV=1` and stale
- * IDs from a Herdr TUI. Without `HC_TERMINAL_ID`, `HERDR_ENV=1` means a TUI
- * pane.
+ * Detection without `--surface`: the process tree comes first. The script
+ * walks up from this process and takes the nearest ancestor: a process named
+ * `herdr-core` means desktop, a process named `herdr` means tui. Only when no
+ * such ancestor exists (or there is no `/proc`, as on macOS and Windows) it
+ * reads the variables: `HC_TERMINAL_ID` means desktop and wins over
+ * `HERDR_ENV=1`, which means tui. Core terminals often inherit `HERDR_ENV=1`
+ * and stale IDs from a Herdr TUI that ran before on the same machine, and a
+ * TUI started inside a core terminal inherits `HC_TERMINAL_ID`.
+ *
+ * Test variables: `HERDRFY_PROC_ROOT` replaces `/proc` and `HERDRFY_PID`
+ * replaces `process.pid` as the first pid of the walk, so the tests can build
+ * a fake process tree.
  *
  * Desktop placement: a terminal sits in a window tab only when it carries both
  * `herdr.space` and `herdr.tab` labels. `terminal.placement` says which case
@@ -37,10 +45,26 @@
  * JSON output:
  *   Desktop: { surface: "desktop", found, cli: "hc", window: { cli,
  *     available }, terminal: { id, name, where, space, tab, placement,
- *     identity, cwd, program, state, status, parent }, neighbors: [...] }
+ *     identity, cwd, program, state, status, parent }, neighbors: [...],
+ *     detection, mismatch? }
  *   TUI: { surface: "tui", found, cli: "herdr", workspace, tab, pane,
- *     envCurrent, method, workspaces: [...] }
- *   Outside Herdr: { surface: null, found: false }
+ *     envCurrent, method, workspaces: [...], detection, mismatch? }
+ *   Outside Herdr: { surface: null, found: false, detection }
+ *
+ * The `detection` object appears in every answer:
+ *   process       surface given by the process tree: "desktop", "tui" or null
+ *   env           surface the variables alone would give: "desktop", "tui" or
+ *                 null
+ *   inheritedEnv  variables of the other surface found in the environment:
+ *                 HERDR_ENV, HERDR_SOCKET_PATH, HERDR_PANE_ID,
+ *                 HERDR_WORKSPACE_ID and HERDR_TAB_ID in a core terminal,
+ *                 HC_TERMINAL_ID and HC_TERMINAL_SOCKET in a TUI pane; measured against the
+ *                 surface the process tree gives (the chosen surface when
+ *                 the tree gives none); empty when there is none
+ * `mismatch: true` appears only when `--surface` contradicts
+ * `detection.process`; the answer keeps the surface the person asked for, and
+ * the text output opens with a `Warning:` line saying the commands do not
+ * reach where this agent runs.
  *
  * Exit codes: 0 answered (also outside Herdr), 1 could not read Herdr,
  * 2 invalid argument.
@@ -50,6 +74,19 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
+
+/** Root of the process table; `HERDRFY_PROC_ROOT` lets the tests replace it. */
+const PROC_ROOT = process.env.HERDRFY_PROC_ROOT || "/proc";
+
+/** First pid of the walk; `HERDRFY_PID` lets the tests start from a fake one. */
+const START_PID = Number(process.env.HERDRFY_PID ?? process.pid);
+
+/** Process names that mark a surface, one per ancestor kind. */
+const SURFACE_BY_PROCESS = { "herdr-core": "desktop", herdr: "tui" };
+
+/** Position variables of a Herdr TUI, in the order the answer lists them. */
+// HERDR_SOCKET_PATH is the one that routes the `herdr` CLI to the TUI server.
+const TUI_VARIABLES = ["HERDR_ENV", "HERDR_SOCKET_PATH", "HERDR_PANE_ID", "HERDR_WORKSPACE_ID", "HERDR_TAB_ID"];
 
 const USAGE = `Usage: node where.mjs [--surface desktop|tui] [--json]
 
@@ -150,30 +187,74 @@ function locateOnDesktop() {
   return { surface: "desktop", found: true, cli: "hc", window, terminal, neighbors };
 }
 
-/** Reads the name and parent PID of a process from /proc. */
+/** Reads the name and parent PID of a process from the process table. */
 function readProcess(pid) {
-  const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
-  // The name sits between parentheses and may contain spaces; PPID follows.
-  const end = stat.lastIndexOf(")");
-  const name = stat.slice(stat.indexOf("(") + 1, end);
-  const ppid = Number(stat.slice(end + 2).split(" ")[1]);
-  return { pid, name, ppid };
+  try {
+    const stat = readFileSync(join(PROC_ROOT, String(pid), "stat"), "utf8");
+    // The name sits between parentheses and may contain spaces; PPID follows.
+    const end = stat.lastIndexOf(")");
+    const name = stat.slice(stat.indexOf("(") + 1, end);
+    const ppid = Number(stat.slice(end + 2).split(" ")[1]);
+    return { pid, name, ppid };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Walks up from this process and returns the surface of the nearest ancestor:
+ * `herdr-core` means desktop, `herdr` means tui, anything else continues up.
+ * Returns null when the tree has neither, or when the process table is
+ * unreadable (macOS, Windows).
+ */
+function processSurface() {
+  let current = readProcess(START_PID);
+  while (current && current.ppid > 1) {
+    const parent = readProcess(current.ppid);
+    if (!parent) return null;
+    if (SURFACE_BY_PROCESS[parent.name]) return SURFACE_BY_PROCESS[parent.name];
+    current = parent;
+  }
+  return null;
+}
+
+/** Returns the surface the environment variables alone indicate. */
+function envSurface() {
+  if (process.env.HC_TERMINAL_ID) return "desktop";
+  if (process.env.HERDR_ENV === "1") return "tui";
+  return null;
+}
+
+/**
+ * Lists the variables of the other surface present in the environment: the
+ * TUI position variables in a core terminal, `HC_TERMINAL_ID` in a TUI pane.
+ */
+function inheritedEnv(surface) {
+  if (surface === "desktop") return TUI_VARIABLES.filter((name) => process.env[name]);
+  // HC_TERMINAL_SOCKET is the one that routes the `hc` CLI to the core.
+  if (surface === "tui") return ["HC_TERMINAL_ID", "HC_TERMINAL_SOCKET"].filter((name) => process.env[name]);
+  return [];
 }
 
 /** Walks up to the Herdr server and returns its direct child shell. */
 function paneShell() {
-  if (!existsSync("/proc/self/stat")) return undefined;
-  let current = readProcess(process.pid);
-  while (current.ppid > 1) {
+  let current = readProcess(START_PID);
+  while (current && current.ppid > 1) {
     const parent = readProcess(current.ppid);
+    if (!parent) return undefined;
     if (parent.name === "herdr") return current.pid;
     current = parent;
   }
   return undefined;
 }
 
-/** Locates the pane in the Herdr TUI by its shell, with the variables as fallback. */
-function locateOnTui() {
+/**
+ * Locates the pane in the Herdr TUI by its shell, with the variables as
+ * fallback. The fallback is skipped when the process tree says the agent runs
+ * in a herdr-core terminal: those variables belong to a TUI that ran before,
+ * and accepting the pane would send the agent to the wrong surface.
+ */
+function locateOnTui(processSurfaceName) {
   const workspaces = herdr("workspace", "list").workspaces;
   const panes = workspaces.flatMap((w) => herdr("pane", "list", "--workspace", w.workspace_id).panes);
   const workspaceSummary = workspaces.map((w) => ({ id: w.workspace_id, label: w.label, tabs: w.tab_count, panes: w.pane_count }));
@@ -192,7 +273,7 @@ function locateOnTui() {
       }
     });
   }
-  if (!pane) {
+  if (!pane && processSurfaceName !== "desktop") {
     method = "env";
     pane = panes.find((item) => item.pane_id === envPane);
   }
@@ -259,20 +340,50 @@ function printTui(data) {
   if (data.method === "env") console.log("Warning: position taken from the environment variables, not checked against the processes.");
 }
 
+/**
+ * Prints the warning about inherited variables. The direction follows the
+ * process tree (or the chosen surface when the tree gives none), so a
+ * `--surface` that contradicts the tree still names the right origin.
+ */
+function printInherited(data) {
+  const names = data.detection.inheritedEnv;
+  if (names.length === 0) return;
+  const list = names.map((name) => `${name}=${process.env[name]}`).join(", ");
+  const base = data.detection.process ?? data.surface;
+  if (base === "desktop") console.log(`Warning:   ${list} came from a Herdr TUI; herdr commands from here reach the TUI, not this window. Use hc.`);
+  else console.log(`Warning:   ${list} came from a herdr-core terminal; hc commands from here reach the core, not this pane. Use herdr.`);
+}
+
 /** Prints the answer as readable text or as JSON. */
 function print(data, json) {
-  if (json) console.log(JSON.stringify(data, null, 2));
-  else if (!data.surface) console.log("Outside Herdr: this agent runs neither in a herdr-core terminal nor in a Herdr TUI pane.");
+  if (json) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+  if (data.mismatch) {
+    const other = data.detection.process === "desktop" ? "Herdr Desktop (herdr-core)" : "Herdr TUI";
+    console.log(`Warning:   this process runs under ${other}, not under Herdr ${data.surface === "desktop" ? "Desktop" : "TUI"}; the commands of this surface do not reach where this agent runs.`);
+  }
+  printInherited(data);
+  if (!data.surface) console.log("Outside Herdr: this agent runs neither in a herdr-core terminal nor in a Herdr TUI pane.");
   else if (data.surface === "desktop") printDesktop(data);
   else printTui(data);
 }
 
 const options = parseArgs(process.argv.slice(2));
 try {
-  const surface = options.surface ?? (process.env.HC_TERMINAL_ID ? "desktop" : process.env.HERDR_ENV === "1" ? "tui" : null);
-  if (surface === "desktop") print(locateOnDesktop(), options.json);
-  else if (surface === "tui") print(locateOnTui(), options.json);
-  else print({ surface: null, found: false }, options.json);
+  const fromProcess = processSurface();
+  const fromEnv = envSurface();
+  const surface = options.surface ?? fromProcess ?? fromEnv;
+  const detection = { process: fromProcess, env: fromEnv, inheritedEnv: inheritedEnv(fromProcess ?? surface) };
+  const mismatch = Boolean(options.surface && fromProcess && options.surface !== fromProcess);
+  let data;
+  if (surface === "desktop") data = locateOnDesktop();
+  else if (surface === "tui") data = locateOnTui(fromProcess);
+  else data = { surface: null, found: false };
+  data.detection = detection;
+  if (mismatch) data.mismatch = true;
+  print(data, options.json);
 } catch (error) {
   const detail = error instanceof Error ? error.message.split("\n")[0] : String(error);
   console.error(`Could not query Herdr: ${detail}`);
