@@ -143,4 +143,4 @@ Quem instalou com `npx skills add` atualiza rodando o mesmo comando. Quando o te
 
 ## Licença
 
-As contribuições entram sob a licença [MIT](LICENSE).
+As contribuições entram sob a mesma licença do projeto, a [GNU AGPL 3.0](LICENSE). Ao abrir um pull request, você concorda em publicar a sua contribuição sob a AGPL 3.0. Versões já publicadas continuam sob a licença com que saíram.

@@ -216,4 +216,5 @@ Quer usar o Herdrfy em projetos de verdade, com acompanhamento? Conheça os [pla
 
 ## Licença
 
-[MIT](LICENSE).
+Distribuído sob a [GNU AGPL 3.0](LICENSE). A licença não concede o uso do
+nome e do logo do Herdrfy nem da marca Promovaweb (AGPL 3.0, seção 7, item e).

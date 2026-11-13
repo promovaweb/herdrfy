@@ -3,6 +3,16 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.3.0](https://github.com/promovaweb/herdrfy/compare/v0.2.2...v0.3.0) (2026-11-13)
+
+### Licença
+
+- A partir desta versão, o projeto é distribuído sob a GNU AGPL 3.0; versões anteriores continuam sob a licença com que foram publicadas.
+- `LICENSE` traz o texto oficial e integral da GNU Affero General Public License 3.0, no lugar da MIT.
+- `package.json` declara `AGPL-3.0-only` no campo `license`.
+- `README.md`: a seção Licença aponta para a AGPL 3.0 e avisa que a licença não concede o uso do nome e do logo do Herdrfy nem da marca Promovaweb (AGPL 3.0, seção 7, item e).
+- `CONTRIBUTING.md`: as contribuições entram sob a mesma licença do projeto.
+
 ## [0.2.2](https://github.com/promovaweb/herdrfy/compare/v0.2.1...v0.2.2) (2026-11-13)
 
 ### Documentação
