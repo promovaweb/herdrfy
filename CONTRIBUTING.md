@@ -41,6 +41,7 @@ node skills/herdrfy/scripts/instructions.mjs --help
 | `scripts/validate.mjs` | validador do repositório |
 | `tests/scripts.test.mjs` | testes dos scripts, com `hc` e `herdr` falsos no `PATH` |
 | `docs/user/` | guia de uso para quem usa a skill |
+| `brand/` | kit de marca: logo, favicons, paleta, tokens, fontes e guia visual. Leia `brand/README.md` antes de usar o logo |
 | `.github/workflows/` | `CI`, que valida pull requests. `Release`, que publica a tag |
 
 ## Fluxo de trabalho
@@ -105,6 +106,7 @@ npm test                  # só os testes dos scripts
 | `skills/herdrfy/references/` | sintaxe e comportamento por tarefa |
 | `AGENTS.md` | regras para agentes que trabalham neste repositório |
 | `CHANGELOG.md` | toda versão publicada |
+| `brand/` | ativos e tokens de marca; o logo não é redesenhado nem reexportado à mão |
 
 O guia de uso é publicado em <https://promovaweb.com/skills/herdrfy/>. O portal do Herdr fica em <https://promovaweb.com/herdr/>. Mudança de comando, de opção ou de fluxo entra no guia na mesma mudança do código.
 

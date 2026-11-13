@@ -3,6 +3,15 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.3.1](https://github.com/promovaweb/herdrfy/compare/v0.3.0...v0.3.1) (2026-11-13)
+
+### Documentação
+
+- Nova identidade visual: ícone, logotipo e kit de marca em `brand/`. O símbolo mostra painéis em grade, quatro painéis do Herdr com o agente em foco destacado em magenta e o cursor de terminal ativo.
+- `brand/` traz o logo em SVG e PNG para fundo claro e escuro, favicons de 16 a 512 px, paleta com petróleo e turquesa da Promovaweb e acento magenta próprio, tokens, `global.css`, tema Tailwind, fontes, relatório de contraste, manifesto com hashes e guia visual.
+- `README.md`: o cabeçalho abre com o logo do Herdrfy, que troca de versão conforme o tema, e traz a linha "Um projeto da Promovaweb".
+- `CONTRIBUTING.md`: a tabela de estrutura e a de documentação citam `brand/`.
+
 ## [0.3.0](https://github.com/promovaweb/herdrfy/compare/v0.2.2...v0.3.0) (2026-11-13)
 
 ### Licença

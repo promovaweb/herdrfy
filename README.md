@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://promovaweb.com">
+  <a href="https://github.com/promovaweb/herdrfy">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://promovaweb.com/promovaweb-logo-dark-586.png">
-      <img alt="Promovaweb" src="https://promovaweb.com/promovaweb-logo-light-586.png" width="240">
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/promovaweb/herdrfy/main/brand/logo/logo-dark.png">
+      <img alt="Herdrfy" src="https://raw.githubusercontent.com/promovaweb/herdrfy/main/brand/logo/logo-light.png" width="360">
     </picture>
   </a>
 </p>
@@ -12,6 +12,8 @@
 <p align="center">
   Ensina o seu agente de código a orquestrar o Herdr e os outros agentes, no Herdr TUI e no Herdr Desktop.
 </p>
+
+<p align="center">Um projeto da <a href="https://promovaweb.com">Promovaweb</a></p>
 
 <p align="center">
   <a href="https://github.com/promovaweb/herdrfy/releases/latest"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/promovaweb/herdrfy"></a>
