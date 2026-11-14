@@ -40,7 +40,7 @@ Placement: shown as "herdrfy / main" but without herdr.space and herdr.tab label
 Identity:  herdr-mobile
 ```
 
-Nesse caso o agente abre o que você pedir como auxiliar, sem painel, e avisa
+Nesse caso o agente abre o que você solicitar como auxiliar (sem painel) e avisa você disso
 (ver [Superfícies](02-superficies.md#terminal-aberto-fora-da-janela)).
 
 ## No TUI
@@ -54,8 +54,8 @@ Folder:    /home/ana/api
 ```
 
 O Herdr TUI grava a posição do painel em variáveis de ambiente quando o
-painel nasce. Se você mover o painel para outra aba ou workspace, as
-variáveis continuam com o valor antigo. O localizador não confia nelas: ele
+painel é criado. Quando o painel muda de aba ou de workspace, as variáveis
+continuam com o valor antigo. O localizador não confia nelas: ele
 sobe a árvore de processos até o servidor do Herdr e procura o painel pelo
 shell. Quando as variáveis estão velhas, a resposta traz um aviso
 (`Warning`) com o ID certo.
@@ -70,5 +70,5 @@ não existe "a mesma aba" de referência.
 
 ## Depois de mover
 
-Moveu o painel ou a aba? Diga ao agente. Ele roda o localizador de novo
-antes do próximo comando.
+Depois de mover o painel ou a aba, avise o agente para que ele rode o
+localizador de novo no próximo comando.

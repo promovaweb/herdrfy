@@ -108,7 +108,7 @@ npm test                  # só os testes dos scripts
 | `CHANGELOG.md` | toda versão publicada |
 | `brand/` | ativos e tokens de marca; o logo não é redesenhado nem reexportado à mão |
 
-O guia de uso é publicado em <https://promovaweb.com/skills/herdrfy/>. O portal do Herdr fica em <https://promovaweb.com/herdr/>. Mudança de comando, de opção ou de fluxo entra no guia na mesma mudança do código.
+O guia de uso em `docs/user/` é publicado em <https://promovaweb.com/docs/herdrfy/> pelo Hub da Promovaweb; a página da skill na Central de Skills fica em <https://promovaweb.com/skills/herdrfy/>. O portal do Herdr fica em <https://promovaweb.com/herdr/>. Mudança de comando, de opção ou de fluxo entra no guia na mesma mudança do código.
 
 Quando o texto do bloco de instruções ou o nome de um script muda, rode `node skills/herdrfy/scripts/instructions.mjs --check` nos projetos de teste e escreva no changelog que quem já instalou precisa rodar o script de novo.
 

@@ -3,6 +3,14 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.3.2](https://github.com/promovaweb/herdrfy/compare/v0.3.1...v0.3.2) (2026-11-13)
+
+### Documentação
+
+- O guia de `docs/user/` passou a ser publicado em <https://promovaweb.com/docs/herdrfy/>. O botão Documentação do README e a seção Documentação apontam para essa página; a página da skill na Central de Skills continua citada.
+- `CONTRIBUTING.md`: a seção de documentação registra onde o guia é publicado.
+- Copy do guia de `docs/user/` revisada sob o contrato editorial da Promovaweb.
+
 ## [0.3.1](https://github.com/promovaweb/herdrfy/compare/v0.3.0...v0.3.1) (2026-11-13)
 
 ### Documentação

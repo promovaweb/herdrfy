@@ -2,8 +2,8 @@
 
 ## Permissões liberadas, sempre
 
-O Herdrfy inicia todo agente com as flags que dispensam os pedidos de
-aprovação, pelo comando completo:
+O Herdrfy inicia todo agente pelo comando completo, com as flags que dispensam
+as confirmações de permissão:
 
 | Agente | Comando |
 | --- | --- |
@@ -11,23 +11,23 @@ aprovação, pelo comando completo:
 | Codex | `codex --yolo --no-daemon` |
 | OpenCode | `opencode --auto` |
 
-O comando vai escrito por extenso, sem alias de shell. Assim ele funciona em
-qualquer máquina e fica visível nos dados do terminal.
+O comando vai escrito por extenso, sem alias de shell, para funcionar em
+qualquer máquina e aparecer na lista de processos do terminal.
 
-Nesse modo, o agente edita arquivos e roda comandos sem pedir confirmação.
+Nesse modo, o agente edita arquivos e roda comandos sem aguardar confirmação.
 Use em máquinas e pastas onde isso é aceitável para você.
 
 ## A tarefa
 
 Cada agente recebe uma tarefa escrita com: objetivo, arquivos e pastas do
 escopo, se pode editar ou só ler, o que já foi conferido, a forma da
-resposta e como avisar o fim. Quanto mais exato o seu pedido, mais exata a
+resposta e como avisar o fim. Quanto mais exata a sua instrução, mais exata a
 tarefa que o seu agente escreve.
 
 ## Pasta nova
 
 Na primeira vez numa pasta, Claude Code e Codex perguntam se você confia
-nela, mesmo com as permissões liberadas. Quando a pasta é a do seu pedido, o
+nela, mesmo com as permissões liberadas. Quando a pasta é a da sua tarefa, o
 Herdrfy aceita e segue. Para outra pasta, ele mostra a pergunta e espera a
 sua resposta.
 
@@ -42,12 +42,12 @@ um. Os estados que você vai ver:
 | `working` | trabalhando |
 | `idle` | parado, pronto para receber texto |
 | `done` | terminou enquanto você olhava outra coisa |
-| `blocked` | esperando você: uma pergunta ou um pedido de aprovação |
+| `blocked` | esperando você: uma pergunta ou uma confirmação de permissão |
 | `error` | parou com erro (Desktop) |
 | `unknown` | o Herdr não conseguiu classificar (TUI) |
 
-Um agente em `blocked` pede a sua resposta. O Herdrfy lê a pergunta e traz
-para você.
+Um agente em `blocked` aguarda a sua resposta. O Herdrfy lê a pergunta na tela
+dele e traz o texto até você.
 
 ## Resultado
 

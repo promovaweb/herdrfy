@@ -1,27 +1,27 @@
 # Problemas comuns
 
-O que fazer quando o trabalho com os agentes não sai como esperado. Em quase
-todos os casos, o primeiro passo é pedir ao seu agente que leia a tela do
-outro.
+O que fazer quando o trabalho com os agentes não sai como esperado. Na maior
+parte dos problemas abaixo, o primeiro passo é mandar o seu agente ler a tela
+do outro.
 
 ## O agente abriu e não começou a tarefa
 
 Um agente recém-aberto leva alguns segundos para mostrar a tarefa. O Herdrfy
 espera, relê a tela e só reenvia depois de duas esperas seguidas sem a
-tarefa na tela. Se você vir a mesma tarefa rodar duas vezes, o reenvio foi
-cedo demais: avise, para o agente interromper a segunda.
+tarefa na tela. Quando a mesma tarefa roda em dobro, o reenvio foi cedo
+demais: avise, para o agente interromper a segunda execução.
 
 ## O agente parou numa pergunta de confiança da pasta
 
 Na primeira vez numa pasta, Claude Code e Codex perguntam se você confia
-nela. Quando a pasta é a do seu pedido, o Herdrfy aceita e segue. Para outra
+nela. Quando a pasta é a da sua tarefa, o Herdrfy aceita e segue. Para outra
 pasta, ele mostra a pergunta e espera a sua resposta. O OpenCode não mostra
 esse diálogo.
 
 ## O agente está em `blocked`
 
-Ele espera uma pessoa: uma pergunta ou um pedido de aprovação. O Herdrfy lê a
-tela e traz a pergunta para você. Ele não responde no seu lugar.
+Ele espera a sua resposta a uma pergunta ou a uma confirmação de permissão. O
+Herdrfy lê a tela e traz a pergunta para você, sem responder no seu lugar.
 
 ## A tela do agente aparece cortada
 
@@ -38,18 +38,17 @@ node ~/.agents/skills/herdrfy/scripts/where.mjs
 ```
 
 - Linha `Placement` no lugar de `Space` e `Tab`: o terminal do seu agente
-  não pertence a uma aba da janela. O que ele abre fica como auxiliar. Peça
-  uma aba nova para ver.
+  não pertence a uma aba da janela, então o que ele abre fica como auxiliar.
+  Para ver o auxiliar, mande abrir uma aba nova.
 - Você moveu o painel ou a aba depois que o agente se localizou: diga a ele,
   para rodar o localizador de novo.
-- O agente abriu um auxiliar de propósito, para um trabalho que você não
-  pediu para ver. Ele aparece na lista de agentes, sob o agente que o abriu.
+- O agente abriu um auxiliar de propósito, para um trabalho que não precisava
+  de painel. Ele aparece na lista de agentes, sob o agente que o abriu.
 
 ## O agente usou o comando da outra superfície
 
-Diga qual é a sua: "estou no TUI" ou "estou no Desktop". Um terminal pode
-carregar sinais das duas ao mesmo tempo, e a sua frase vale mais que a
-detecção.
+Diga qual é a sua: "estou no TUI" ou "estou no Desktop". Como um terminal pode
+carregar sinais das duas ao mesmo tempo, a sua frase vale mais que a detecção.
 
 ## Pedi uma aba no Desktop e ela abriu no TUI
 
@@ -60,11 +59,11 @@ na janela do Desktop. O mesmo vale ao contrário: um painel do TUI aberto
 dentro de um terminal do core herda `HC_TERMINAL_ID`.
 
 O agente agora decide a superfície pela árvore de processos: processo
-`herdr-core` é Desktop, processo `herdr` é TUI. Ele nunca usa `herdr` num
-terminal do core, mesmo com `HERDR_ENV=1`. O localizador mostra o resultado
-em `detection` e abre a saída em texto com uma linha `Warning:` quando as
-variáveis da outra superfície estão herdadas. Se você disser a superfície e
-ela contrariar a árvore, a resposta traz `mismatch: true` e o aviso de que
+`herdr-core` é Desktop, processo `herdr` é TUI. Num terminal do core, ele usa
+`hc`, mesmo com `HERDR_ENV=1`. O localizador mostra o resultado em
+`detection` e abre a saída em texto com uma linha `Warning:` quando as
+variáveis da outra superfície estão herdadas. Quando a superfície que você
+informa contraria a árvore, a resposta traz `mismatch: true` e o aviso de que
 os comandos dela não chegam onde o agente roda.
 
 ## O bloco de instruções ficou velho

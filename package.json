@@ -1,6 +1,6 @@
 {
   "name": "herdrfy",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Skill da Promovaweb que orquestra o Herdr e os agentes de código no Herdr TUI e no Herdr Desktop.",
   "type": "module",
   "private": true,

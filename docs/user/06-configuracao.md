@@ -36,13 +36,13 @@ hc run --bg --name revisor claude-yolo "Revise só src/x.ts."
 | Herdr Desktop | `~/.config/herdr-app/` | `herdr-app status` |
 
 Para mudar tema, atalhos ou barra lateral do TUI, diga o que quer. O agente
-faz backup do arquivo, altera só a chave pedida, valida e recarrega com
+faz backup do arquivo, altera só a chave indicada, valida e recarrega com
 `herdr server reload-config`.
 
 ## Instruções do projeto
 
 Agentes novos não conhecem a skill. Para que todo agente aberto no projeto
-siga as mesmas regras, peça: "grave as instruções do Herdr no AGENTS.md".
+siga as mesmas instruções, diga: "grave as instruções do Herdr no AGENTS.md".
 
 ```bash
 cd /caminho/do/projeto
@@ -58,14 +58,14 @@ O bloco entra no `AGENTS.md` e no `CLAUDE.md`, entre dois marcadores:
 <!-- herdrfy:end -->
 ```
 
-Rodar de novo atualiza só o que está entre eles. O que você escreveu fora
-dos marcadores não muda. Para valer em todos os projetos, use `--global`;
-para tirar, `--remove`.
+Rodar de novo atualiza só o que está entre eles e preserva o que você
+escreveu fora dos marcadores. Para valer em todos os projetos, use
+`--global`. Para tirar, use `--remove`.
 
 Rode o comando de novo depois de atualizar a skill: `--check` responde
 `outdated` nos arquivos que ficaram com o bloco antigo. Blocos gravados antes
 da versão 0.2.0 usavam os marcadores `herdrfy:inicio` e `herdrfy:fim`; o
 script reconhece e regrava com os atuais.
 
-Se o seu `AGENTS.md` já tem regras de Herdr escritas à mão que dizem o
+Se o seu `AGENTS.md` já tem instruções de Herdr escritas à mão que dizem o
 contrário do bloco, o agente aponta as linhas e pergunta qual fica.

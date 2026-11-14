@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <a href="https://promovaweb.com/skills/herdrfy/">Documentação</a> ·
+  <a href="https://promovaweb.com/docs/herdrfy/">Documentação</a> ·
   <a href="https://promovaweb.com/discord">Discord</a> ·
   <a href="https://promovaweb.com/planos?utm_source=github&utm_medium=readme&utm_campaign=herdrfy">Planos da Promovaweb</a> ·
   <a href="CHANGELOG.md">Changelog</a>
@@ -183,7 +183,8 @@ Os três scripts aceitam `--json` e devolvem a resposta em inglês, como os bin�
 
 ## Documentação
 
-- Guia de uso no site: <https://promovaweb.com/skills/herdrfy/>.
+- Guia de uso no site: <https://promovaweb.com/docs/herdrfy/>.
+- Página da skill na Central de Skills: <https://promovaweb.com/skills/herdrfy/>.
 - Guia em Markdown: [`docs/user/`](docs/user/README.md), com a visão geral, a instalação, as superfícies, a localização, os agentes, os painéis, a configuração e os problemas comuns.
 - Manual embutido: `node ~/.agents/skills/herdrfy/scripts/where.mjs --help` e os demais scripts com `--help`.
 - Portal do Herdr na Promovaweb: <https://promovaweb.com/herdr/>.

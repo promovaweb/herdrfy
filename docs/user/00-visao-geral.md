@@ -5,9 +5,9 @@ O Herdr mantém terminais e agentes de código vivos e organizados. O Herdrfy
 abrir outros agentes ao lado, passar tarefas, ler o que eles fizeram e
 arrumar a casa no final.
 
-## O que você pode pedir
+## O que você pode mandar o agente fazer
 
-- "Abra um Codex ao lado e peça uma revisão do diff."
+- "Abra um Codex ao lado para revisar as alterações."
 - "Abra três agentes, um para cada pacote, e me traga o resumo."
 - "Leia o que o agente da aba de testes respondeu."
 - "Configure o Herdr neste projeto."
@@ -19,8 +19,8 @@ arrumar a casa no final.
    terminal, a aba e o espaço (ou o painel, a aba e o workspace) onde está.
 2. **Superfície.** Se você disser que está no Herdr TUI ou no Herdr Desktop,
    a sua frase vale mais que a detecção.
-3. **Lugar.** O que ele abrir aparece na mesma aba de onde você pediu. Aba
-   ou espaço novo, só se você pedir.
+3. **Lugar.** O que ele abrir aparece na mesma aba de onde você deu a
+   instrução. Aba ou espaço novo, só quando você manda.
 4. **Agentes.** Cada agente é iniciado com as permissões liberadas e recebe
    uma tarefa com escopo escrito.
 5. **Acompanhamento.** O agente espera pelos comandos do Herdr, lê a tela do
@@ -31,6 +31,6 @@ arrumar a casa no final.
 
 - Não para o servidor do Herdr nem o herdr-core.
 - Não fecha painéis, abas ou espaços que não abriu.
-- Não responde no seu lugar a uma pergunta ou pedido de aprovação de outro
-  agente. Ela traz a pergunta para você.
+- Não responde no seu lugar a uma pergunta ou confirmação de permissão de
+  outro agente: traz a pergunta para você.
 - Não usa alias de shell para iniciar agentes.

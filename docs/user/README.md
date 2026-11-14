@@ -1,6 +1,6 @@
 # Guia do Herdrfy
 
-Guia para quem usa a skill `herdrfy` com um agente de código no Herdr.
+Guia de uso da skill `herdrfy` com um agente de código no Herdr.
 
 | Capítulo | Assunto |
 | --- | --- |
@@ -13,6 +13,6 @@ Guia para quem usa a skill `herdrfy` com um agente de código no Herdr.
 | [06. Configuração](06-configuracao.md) | integrações, templates e instruções do projeto |
 | [07. Problemas comuns](07-problemas-comuns.md) | o que fazer quando algo sai do esperado |
 
-A ordem de leitura está em [`reading-order.txt`](reading-order.txt). Quem
-mantém o repositório encontra validação e publicação em
+A ordem de leitura está em [`reading-order.txt`](reading-order.txt). As
+instruções de validação e publicação do repositório ficam em
 [`CONTRIBUTING.md`](../../CONTRIBUTING.md).

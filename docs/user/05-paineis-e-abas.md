@@ -1,11 +1,11 @@
 # Painéis, abas e espaços
 
-## A regra
+## Onde cada coisa abre
 
-Tudo o que o agente abre aparece na mesma aba de onde você pediu. Aba,
-espaço ou workspace novo, só quando você pede com essas palavras.
+Tudo o que o agente abre aparece na mesma aba de onde você deu a instrução.
+Aba, espaço ou workspace novo, só quando você diz essas palavras.
 
-| Você pede | O que acontece |
+| Você diz | O que acontece |
 | --- | --- |
 | "abra um agente ao lado" | painel novo na sua aba |
 | "abra um terminal para os testes" | painel novo na sua aba |
@@ -26,7 +26,7 @@ ou transformá-lo em aba.
 
 Quando o terminal do próprio agente não pertence a uma aba (aberto pelo
 aplicativo móvel, por exemplo), tudo o que ele abre fica como auxiliar. Ele
-avisa você e só cria uma aba se você pedir.
+avisa você e só cria uma aba quando você manda.
 
 ## No TUI
 
