@@ -41,9 +41,22 @@ Você precisa de ao menos um dos produtos:
 | Herdr Desktop (traz o herdr-core) | `curl -fsSL https://releases.herdr.dev/app/install.sh \| sh` |
 | herdr-core sozinho, para servidor sem janela | `curl -fsSL https://releases.herdr.dev/core/install.sh \| sh` |
 
+No Windows, em PowerShell:
+
+| Produto | Instalação no Windows |
+| --- | --- |
+| Herdr TUI | `powershell -ExecutionPolicy Bypass -c "irm https://herdr.dev/install.ps1 \| iex"` |
+| Herdr Desktop (traz o herdr-core) | `irm https://releases.herdr.dev/app/install.ps1 \| iex` |
+| herdr-core sozinho | `powershell -c "irm https://releases.herdr.dev/core/install.ps1 \| iex"` |
+
+No macOS, também valem `brew install herdr` e, com Apple Silicon,
+`brew install --cask herdr-app`.
+
 Se preferir, diga ao agente: "use herdrfy para conferir a instalação do
 Herdr". Ele roda o diagnóstico, mostra o que falta e aguarda a sua confirmação
-antes de instalar qualquer coisa.
+antes de instalar qualquer coisa. Quando você pede um painel ou um agente e
+o Herdr não está na máquina, ele avisa e mostra os comandos acima para o seu
+sistema.
 
 ## Conferir
 

@@ -35,22 +35,30 @@ Duas armadilhas da descoberta:
 
 ## Painel na aba de quem pediu
 
-Esta é a forma padrão. Veja a geometria do seu painel e divida o lado maior:
+Esta é a forma padrão quando o localizador responde `advice.open: "pane"`.
+Use a direção de `advice.direction`, que já vem calculada pelo tamanho do
+seu painel (`pane.size`):
 
 ```bash
-herdr pane layout --pane <seu-painel>
-herdr pane split <seu-painel> --direction right --cwd "$PWD" --no-focus
+herdr pane split <seu-painel> --direction <right|down> --cwd "$PWD" --no-focus
 ```
 
-Painel largo divide para `right`; painel estreito ou alto divide para
-`down`. Evite repetir a mesma direção até sobrar coluna ou linha apertada
-demais para ler. Respeite a direção que a pessoa pedir. `--no-focus` mantém o
+`right` sai quando cada metade fica com 80 colunas ou mais; `down`, quando
+cada metade fica com 20 linhas ou mais. Para conferir a geometria à mão:
+`herdr pane layout --pane <seu-painel>`. Respeite a direção que a pessoa
+pedir. `--no-focus` mantém o
 foco com ela. O ID do painel novo vem em `.result.pane.pane_id`.
 
 Use o ID devolvido pelo localizador como alvo. `--current` só é confiável
 quando o localizador respondeu `envCurrent: true`.
 
-## Aba e workspace novos, só a pedido
+## Aba nova: a pedido ou pelo `advice`
+
+Aba nova no seu workspace quando a pessoa pedir, ou quando o localizador
+responder `advice.open: "tab"`: a aba já tem 4 painéis, ou o seu painel é
+pequeno demais para dividir, ou a preferência gravada pede aba. Nesse
+último caso, diga à pessoa o motivo. Workspace e worktree novos, só a
+pedido.
 
 ```bash
 herdr tab create --workspace <workspace> --cwd <pasta> --label "logs" --no-focus

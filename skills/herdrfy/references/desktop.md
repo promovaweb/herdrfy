@@ -29,7 +29,7 @@ O localizador devolve os dois primeiros em `terminal.space` e
 ## Painel na aba de quem pediu
 
 Esta é a forma padrão de abrir qualquer coisa visível, quando o localizador
-responde `placement: "tab"`. Repita os dois rótulos:
+responde `placement: "tab"` e `advice.open: "pane"`. Repita os dois rótulos:
 
 ```bash
 hc run --bg --name <nome> --cwd "$PWD" \
@@ -76,7 +76,12 @@ auxiliar sem painel e num core sem janela.
 4. Se ela pedir para ver o auxiliar numa aba, use um dos caminhos de "Aba
    nova e espaço novo", abaixo. Isso já é um pedido de aba nova.
 
-## Aba nova e espaço novo, só a pedido
+## Aba nova e espaço novo
+
+Aba nova no seu espaço quando a pessoa pedir, ou quando o localizador
+responder `advice.open: "tab"`: a aba já mostra 3 terminais, e mais um
+painel ficaria estreito demais para ler, ou a preferência gravada pede aba.
+Diga à pessoa o motivo. Espaço novo, só a pedido.
 
 Com `herdr-app` na máquina:
 

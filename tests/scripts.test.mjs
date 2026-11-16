@@ -35,18 +35,20 @@ function cleanEnv(extra = {}) {
   for (const key of Object.keys(env)) {
     if (key.startsWith("HC_") || key.startsWith("HERDR_") || key.startsWith("HERDRFY_") || key === "TERM_PROGRAM") delete env[key];
   }
-  return { ...env, HERDRFY_PROC_ROOT: emptyProc, ...extra };
+  return { ...env, HERDRFY_PROC_ROOT: emptyProc, HERDRFY_CONFIG: join(emptyProc, "no-config.json"), ...extra };
 }
 
 /**
  * Creates a fake process table: `tree` maps a pid to [name, ppid]. Each pid
- * gets a `<pid>/stat` file in the real format, `123 (name) S 1 ...`.
+ * gets a `<pid>/stat` file in the real format, `123 (name) S 1 ...`, and,
+ * when a third item lists the arguments, a NUL-separated `<pid>/cmdline`.
  */
 function fakeProc(tree) {
   const dir = mkdtempSync(join(tmpdir(), "herdrfy-proc-"));
-  for (const [pid, [name, ppid]] of Object.entries(tree)) {
+  for (const [pid, [name, ppid, argv]] of Object.entries(tree)) {
     mkdirSync(join(dir, pid));
     writeFileSync(join(dir, pid, "stat"), `${pid} (${name}) S ${ppid} ${pid} ${pid} 0 -1 4194560 0 0 0 0 0 0 0 20 0 1 0 0 0 0 0\n`);
+    if (argv) writeFileSync(join(dir, pid, "cmdline"), `${argv.join("\0")}\0`);
   }
   return dir;
 }
@@ -168,10 +170,40 @@ test("all scripts: an unknown argument exits 2", () => {
   assert.equal(run(instructions, ["--file"]).code, 2);
 });
 
-test("where: outside Herdr answers a null surface with code 0", () => {
-  const r = run(where, ["--json"], cleanEnv());
+test("where: outside Herdr answers a null surface with code 0", { skip: !unix }, () => {
+  const bin = fakeCli("herdr", {});
+  const r = run(where, ["--json"], cleanEnv({ PATH: `${bin}:/usr/bin:/bin` }));
   assert.equal(r.code, 0);
-  assert.deepEqual(JSON.parse(r.out), { surface: null, found: false, detection: { process: null, env: null, termProgram: null, inheritedEnv: [] } });
+  const data = JSON.parse(r.out);
+  assert.equal(data.surface, null);
+  assert.equal(data.found, false);
+  assert.deepEqual(data.detection, { process: null, env: null, termProgram: null, inheritedEnv: [] });
+  assert.deepEqual(data.installed, { herdr: true, hc: false, herdrApp: false });
+  assert.equal(data.install, undefined);
+  assert.equal(data.advice.open, null);
+});
+
+test("where: without any Herdr binary it lists the install commands", { skip: !unix }, () => {
+  const empty = mkdtempSync(join(tmpdir(), "herdrfy-empty-"));
+  const env = cleanEnv({ PATH: empty });
+  const data = JSON.parse(run(where, ["--json"], env).out);
+  assert.deepEqual(data.installed, { herdr: false, hc: false, herdrApp: false });
+  assert.deepEqual(data.install.map((i) => i.product).filter((p, i, all) => all.indexOf(p) === i), ["tui", "desktop", "core"]);
+  assert.ok(data.install.some((i) => i.command === "curl -fsSL https://herdr.dev/install.sh | sh"));
+  const text = run(where, [], env).out;
+  assert.match(text, /^Not installed: no Herdr binary on this machine\./mu);
+  assert.match(text, /^Install \(ask the person first\):/mu);
+});
+
+test("where: a surface whose command is missing reports it with its install commands", { skip: !unix }, () => {
+  const empty = mkdtempSync(join(tmpdir(), "herdrfy-empty-"));
+  const r = run(where, ["--json"], cleanEnv({ PATH: empty, HC_TERMINAL_ID: "t1" }));
+  assert.equal(r.code, 0, r.err);
+  const data = JSON.parse(r.out);
+  assert.equal(data.surface, "desktop");
+  assert.equal(data.missing, "hc");
+  assert.deepEqual([...new Set(data.install.map((i) => i.product))], ["desktop", "core"]);
+  assert.equal(data.advice.open, null);
 });
 
 test("where: an invalid or missing surface exits 2", () => {
@@ -237,8 +269,10 @@ test("where: TUI pane found through the environment variables", { skip: !unix },
   assert.equal(data.surface, "tui");
   assert.equal(data.found, true);
   assert.deepEqual(data.workspace, { id: "w1", label: "api" });
-  assert.deepEqual(data.tab, { id: "w1:t2", label: "agents" });
-  assert.deepEqual(data.pane, { id: "w1:p5", cwd: "/work", agent: "claude" });
+  assert.deepEqual(data.tab, { id: "w1:t2", label: "agents", panes: 1 });
+  assert.deepEqual(data.pane, { id: "w1:p5", cwd: "/work", agent: "claude", size: null });
+  // Without geometry the advice still opens a pane, to the right.
+  assert.deepEqual([data.advice.open, data.advice.direction], ["pane", "right"]);
   assert.equal(data.envCurrent, true);
   assert.equal(data.method, "env");
 });
@@ -383,6 +417,75 @@ test("where: without /proc, a core terminal identity keeps desktop", { skip: !un
   assert.equal(data.surface, "desktop");
   assert.equal(data.detection.env, "desktop");
   assert.equal(data.detection.termProgram, "ghostty");
+});
+
+/** Fake TUI with one pane of the given size in a tab with `count` panes. */
+function tuiWithLayout(width, height, count = 1) {
+  const panes = Array.from({ length: count }, (_, i) => ({ pane_id: `w1:p${i + 1}`, workspace_id: "w1", tab_id: "w1:t1", agent: i === 1 ? "codex" : undefined, agent_status: i === 1 ? "idle" : "unknown" }));
+  return fakeCli("herdr", {
+    "workspace list": { result: { workspaces: [{ workspace_id: "w1", label: "api", tab_count: 1, pane_count: count }] } },
+    "pane list": { result: { panes } },
+    "tab list": { result: { tabs: [{ tab_id: "w1:t1", label: "main" }] } },
+    "pane layout": { result: { layout: { panes: panes.map((p, i) => ({ pane_id: p.pane_id, rect: i === 0 ? { width, height, x: 0, y: 0 } : { width: 10, height: 10, x: 0, y: 0 } })) } } },
+  });
+}
+
+test("where: TUI advice follows the pane size and the number of panes", { skip: !unix }, () => {
+  const advice = (bin) => JSON.parse(run(where, ["--json"], cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HERDR_ENV: "1", HERDR_PANE_ID: "w1:p1" })).out);
+  const wide = advice(tuiWithLayout(200, 50));
+  assert.deepEqual(wide.pane.size, { width: 200, height: 50 });
+  assert.deepEqual([wide.advice.open, wide.advice.direction, wide.advice.source], ["pane", "right", "layout"]);
+  assert.deepEqual([advice(tuiWithLayout(120, 50)).advice.open, advice(tuiWithLayout(120, 50)).advice.direction], ["pane", "down"]);
+  assert.equal(advice(tuiWithLayout(100, 30)).advice.open, "tab");
+  const crowded = advice(tuiWithLayout(240, 60, 4));
+  assert.equal(crowded.tab.panes, 4);
+  assert.equal(crowded.advice.open, "tab");
+  assert.deepEqual(crowded.neighbors.map((n) => [n.id, n.agent, n.status]), [["w1:p2", "codex", "idle"], ["w1:p3", null, "unknown"], ["w1:p4", null, "unknown"]]);
+});
+
+test("where: the preference file overrides the layout advice", { skip: !unix }, () => {
+  const dir = mkdtempSync(join(tmpdir(), "herdrfy-config-"));
+  const config = join(dir, "config.json");
+  writeFileSync(config, '{"open":"tab"}');
+  const env = cleanEnv({ PATH: `${tuiWithLayout(200, 50)}:/usr/bin:/bin`, HERDR_ENV: "1", HERDR_PANE_ID: "w1:p1", HERDRFY_CONFIG: config });
+  const data = JSON.parse(run(where, ["--json"], env).out);
+  assert.deepEqual([data.preference.open, data.advice.open, data.advice.source], ["tab", "tab", "preference"]);
+  writeFileSync(config, '{"open":"window"}');
+  const bad = JSON.parse(run(where, ["--json"], env).out);
+  assert.equal(bad.preference.open, "auto");
+  assert.match(bad.preference.error, /invalid open value/u);
+  assert.equal(bad.advice.source, "layout");
+});
+
+test("where: desktop tab with three terminals advises a new tab", { skip: !unix }, () => {
+  const labels = { "herdr.space": "sp1", "herdr.tab": "tb1", where: "api / docs" };
+  const bin = fakeCli("hc", {
+    "get t1": { address: "t1", cwd: "/work", labels, state: "live" },
+    ls: { terminals: [{ address: "t1" }, { address: "t2" }, { address: "t3" }] },
+  });
+  const data = JSON.parse(run(where, ["--json"], cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HC_TERMINAL_ID: "t1" })).out);
+  assert.equal(data.advice.open, "tab");
+  assert.match(data.advice.reason, /already shows 3 terminals/u);
+});
+
+test("where: the agent comes from the process tree, with its permission flag", { skip: !unix }, () => {
+  const bin = fakeCli("hc", { "get t1": { address: "t1", cwd: "/work", labels: {}, state: "live", status: { app: "claude-code" } } });
+  const proc = fakeProc({
+    900: ["zsh", 901],
+    901: ["claude", 902, ["claude", "--permission-mode=auto", "--dangerously-skip-permissions"]],
+    902: ["zsh", 903],
+    903: ["herdr-core", 1],
+  });
+  const env = cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HC_TERMINAL_ID: "t1", HERDRFY_PROC_ROOT: proc, HERDRFY_PID: "900" });
+  const data = JSON.parse(run(where, ["--json"], env).out);
+  assert.deepEqual(data.agent, { name: "claude", source: "process", pid: 901, permissions: true });
+  assert.match(run(where, [], env).out, /^Agent: +claude \(from process, permissions skipped\)/mu);
+  const noFlag = fakeProc({ 910: ["sh", 911], 911: ["node", 912, ["node", "/usr/lib/node_modules/codex/bin/codex"]], 912: ["herdr-core", 1] });
+  const plain = JSON.parse(run(where, ["--json"], { ...env, HERDRFY_PROC_ROOT: noFlag, HERDRFY_PID: "910" }).out);
+  assert.deepEqual([plain.agent.name, plain.agent.permissions], ["codex", false]);
+  // Without the tree, the program Herdr reports names the agent.
+  const reported = JSON.parse(run(where, ["--json"], cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HC_TERMINAL_ID: "t1" })).out);
+  assert.deepEqual([reported.agent.name, reported.agent.source], ["claude", "herdr"]);
 });
 
 test("doctor: answers JSON with the expected sections", () => {

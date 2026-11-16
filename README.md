@@ -43,8 +43,9 @@ O [Herdr](https://github.com/herdrdev/herdr) mantém terminais e agentes de cód
 
 Com a skill instalada, o agente:
 
-- descobre a superfície e a posição dele: terminal, espaço e aba no Desktop; workspace, aba e painel no TUI;
-- abre painéis na mesma aba de quem pediu. Abre aba, espaço ou workspace novo quando a pessoa pede;
+- descobre a superfície e a posição dele: terminal, espaço e aba no Desktop; workspace, aba e painel no TUI, com o tamanho do painel, os vizinhos e qual agente ele é;
+- abre o terminal novo onde a pessoa disser. Sem indicação, usa a mesma aba enquanto ela comporta mais um painel legível e passa para uma aba nova quando não comporta, ou segue a preferência gravada pela pessoa;
+- avisa quando o Herdr não está instalado e oferece os comandos oficiais de instalação para Linux, macOS ou Windows;
 - inicia Claude Code, Codex, OpenCode e outros agentes com as permissões liberadas, pelo comando completo, sem alias de shell;
 - envia tarefas, lê a tela dos agentes, espera o fim do trabalho e confere o resultado antes de resumir;
 - usa o herdr-core para comandos demorados, arquivos e terminais em outras máquinas;
@@ -115,7 +116,11 @@ Space:     sp8ecd504c8ef5fec59681282f5b26d8c8
 Tab:       tb7ec6e34ffe93cd49a498cc401f4596ab
 Folder:    /home/ana/projeto
 Program:   claude-code (working)
+Agent:     claude (from process, permissions skipped)
+Next:      a pane in this tab; this tab shows 1 terminal(s); the window places the new pane. The person's words win.
 ```
+
+Sem o Herdr na máquina, a resposta diz `Not installed` e lista os comandos oficiais de instalação para o seu sistema.
 
 ## Uso
 

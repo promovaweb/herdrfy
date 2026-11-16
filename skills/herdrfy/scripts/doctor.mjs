@@ -161,7 +161,14 @@ const environment = {
 };
 
 const pending = [];
-if (!binaries.herdr.path && !binaries.hc.path) pending.push("No Herdr installed. TUI: curl -fsSL https://herdr.dev/install.sh | sh. Desktop: curl -fsSL https://releases.herdr.dev/app/install.sh | sh.");
+// Official installers per platform; the Desktop installer also brings herdr-core.
+const INSTALLERS = {
+  win32: { tui: 'powershell -ExecutionPolicy Bypass -c "irm https://herdr.dev/install.ps1 | iex"', desktop: "irm https://releases.herdr.dev/app/install.ps1 | iex" },
+  darwin: { tui: "curl -fsSL https://herdr.dev/install.sh | sh (or brew install herdr)", desktop: "curl -fsSL https://releases.herdr.dev/app/install.sh | sh (or brew install --cask herdr-app)" },
+  linux: { tui: "curl -fsSL https://herdr.dev/install.sh | sh", desktop: "curl -fsSL https://releases.herdr.dev/app/install.sh | sh" },
+};
+const installer = INSTALLERS[process.platform] ?? INSTALLERS.linux;
+if (!binaries.herdr.path && !binaries.hc.path) pending.push(`No Herdr installed. TUI: ${installer.tui}. Desktop: ${installer.desktop}.`);
 if (binaries.herdr.path && skills.herdr.length === 0) pending.push("Skill herdr missing: npx skills add herdrdev/herdr --skill herdr -g");
 if (binaries.hc.path && skills["herdr-core"].length === 0) pending.push("Skill herdr-core missing: npx skills add herdrdev/herdr-core --skill herdr-core -g");
 if (binaries.herdr.path) {

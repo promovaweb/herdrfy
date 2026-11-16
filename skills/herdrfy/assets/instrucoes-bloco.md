@@ -12,7 +12,9 @@ antes de controlar terminais, painéis, abas, espaços ou outros agentes.
 
    Ele detecta a superfície pela árvore de processos e só depois pelas
    variáveis. As variáveis `HERDR_WORKSPACE_ID`, `HERDR_TAB_ID` e
-   `HERDR_PANE_ID` ficam velhas quando o painel muda de lugar.
+   `HERDR_PANE_ID` ficam velhas quando o painel muda de lugar. Quando ele
+   responder `Not installed`, avise a pessoa e ofereça os comandos da lista
+   de instalação; rode só com o aceite dela.
 2. **Superfície.** No Herdr TUI o comando é `herdr`. No Herdr Desktop o
    comando é `hc` (herdr-core), com `herdr-app` para a janela quando ele
    existe na máquina. Num terminal do herdr-core, `herdr` não serve mesmo com
@@ -21,8 +23,10 @@ antes de controlar terminais, painéis, abas, espaços ou outros agentes.
    `--surface desktop` e confira `mismatch` na resposta. Pergunte uma vez na
    sessão só quando o localizador responder `Outside Herdr` ou a resposta
    contrariar o pedido.
-3. **Mesma aba.** Painel novo abre na aba de quem pediu. Aba, espaço ou
-   workspace novo só quando a pessoa pedir.
+3. **Onde abrir.** Abra onde a pessoa disser. Sem indicação, siga o
+   `advice` do localizador: painel na aba de quem pediu enquanto couber um
+   painel legível, aba nova no mesmo espaço ou workspace quando não couber.
+   Espaço ou workspace novo, só a pedido.
 4. **Agentes com permissões liberadas.** Inicie todo agente pelo comando
    completo, com as flags abaixo, sem alias de shell:
 

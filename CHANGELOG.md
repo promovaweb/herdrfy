@@ -3,6 +3,30 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.5.0](https://github.com/promovaweb/herdrfy/compare/v0.4.0...v0.5.0) (2026-11-16)
+
+Esta versão muda o texto do bloco de instruções. Depois de atualizar a skill,
+rode `node ~/.agents/skills/herdrfy/scripts/instructions.mjs` em cada projeto
+com o bloco (e com `--global`, se gravou os arquivos globais).
+
+### Novidades
+
+- O localizador responde `advice`: onde abrir o próximo terminal quando a pessoa não disse. No TUI, divide o painel enquanto cada metade fica com 80 colunas ou mais (`right`) ou 20 linhas ou mais (`down`) e a aba tem menos de 4 painéis; abaixo disso, aba nova. No Desktop, painel enquanto a aba mostra menos de 3 terminais, aba nova a partir daí, e auxiliar quando o terminal não tem rótulos de aba. A saída em texto ganha a linha `Next:`. Conferido numa sessão real do TUI: o Herdr divide em metades exatas (120 colunas viram 60 e 60).
+- Preferência da pessoa em `~/.config/herdrfy/config.json` (`{"open":"auto" | "pane" | "tab"}`, ou `HERDRFY_CONFIG`), devolvida em `preference` e aplicada no `advice`. Arquivo inválido vira `auto` com aviso.
+- O localizador identifica o agente que o roda em `agent`: o agente conhecido mais próximo na árvore de processos (Claude Code, Codex, OpenCode, Gemini, Copilot, Kimi, Hermes, Goose, oh-my-pi, Cursor), inclusive os iniciados por Node ou Bun, depois o programa que o Herdr informa e, por fim, `CLAUDECODE=1`. `agent.permissions` diz se a linha de comando dele leva a flag que dispensa aprovações. A saída em texto ganha a linha `Agent:`.
+- No TUI, a resposta traz `pane.size` (largura e altura do painel), `tab.panes` e `neighbors` (os outros painéis da aba, com agente e estado).
+- Herdr ausente: `installed` diz quais binários estão no PATH. Sem nenhum, ou sem o comando da superfície detectada (`missing: "hc"` ou `missing: "herdr"`), a resposta traz `install` com os comandos oficiais para Linux, macOS ou Windows e o texto mostra `Not installed` e `Install (ask the person first):`. Antes, um terminal do core sem `hc` no PATH terminava com `Could not query Herdr` e código 1.
+- `doctor.mjs`: a pendência de Herdr ausente mostra os instaladores do sistema da pessoa, com PowerShell no Windows e Homebrew no macOS.
+
+### Documentação
+
+- `SKILL.md`: a descrição cobre os pedidos que acionam a skill (citar Herdr, dividir a tela, chamar ou delegar a outro agente num ambiente com Herdr, comando demorado em terminal separado, instalar o Herdr). A regra 4 vira "a pessoa decide, depois o `advice`", o passo 1 trata o Herdr ausente e o passo 3 abre onde o `advice` aponta.
+- Bloco de instruções: o item 3 vira "Onde abrir", com o `advice`, e o item 1 manda oferecer a instalação quando o localizador responder `Not installed`.
+- `references/superficies.md`: campos comuns (`installed`, `install`, `agent`, `preference`, `advice`), a tabela do cálculo do `advice` e os campos novos do TUI.
+- `references/configuracao.md`: instaladores do Windows e do Homebrew e a seção "Preferência de painel ou aba".
+- `references/tui.md` e `references/desktop.md`: painel pela direção do `advice` e aba nova a pedido ou pelo `advice`.
+- Guia e README: aba cheia, preferência fixa, Herdr não instalado e exemplos de saída com `Agent:` e `Next:`.
+
 ## [0.4.0](https://github.com/promovaweb/herdrfy/compare/v0.3.2...v0.4.0) (2026-11-16)
 
 Revisão contra os changelogs do Herdr TUI 0.9.5, do herdr-core 0.1.21 e do

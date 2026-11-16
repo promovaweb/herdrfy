@@ -20,10 +20,23 @@ exatamente esse. Mostre o comando que vai rodar.
 | Herdr Desktop (`herdr-app`, instala o herdr-core junto) | `curl -fsSL https://releases.herdr.dev/app/install.sh \| sh` | pela própria janela |
 | herdr-core sozinho (`hc`), para servidor sem janela | `curl -fsSL https://releases.herdr.dev/core/install.sh \| sh` | `hc update` |
 
-No macOS com Apple Silicon também existe `brew install herdr` e
-`brew install --cask herdr-app`. No Windows, os instaladores em PowerShell
-estão nas páginas de instalação de cada projeto. Instalações feitas por
-gerenciador de pacotes atualizam por ele.
+No macOS também existe `brew install herdr`, e no macOS com Apple Silicon,
+`brew install --cask herdr-app`. No Windows, em PowerShell:
+
+| Produto | Windows |
+| --- | --- |
+| Herdr TUI | `powershell -ExecutionPolicy Bypass -c "irm https://herdr.dev/install.ps1 \| iex"` |
+| Herdr Desktop | `irm https://releases.herdr.dev/app/install.ps1 \| iex` |
+| herdr-core sozinho | `powershell -c "irm https://releases.herdr.dev/core/install.ps1 \| iex"` |
+
+O instalador do Desktop instala também o herdr-core quando ele falta.
+Instalações feitas por gerenciador de pacotes atualizam por ele.
+
+O localizador e o diagnóstico mostram esses comandos sozinhos quando o
+Herdr falta: o localizador na lista `install`, para o sistema da pessoa, e o
+diagnóstico em `Pending`. Diga à pessoa que o Herdr não está instalado,
+mostre os comandos da superfície que ela quer e rode só com o aceite dela.
+Os instaladores baixam e executam código: ofereça também ler o script antes.
 
 Confira depois: `herdr --version`, `hc --version`, `herdr-app status`.
 
@@ -169,6 +182,28 @@ esse guia. Regras de lá que valem repetir: duplique layout ou mod de fábrica
 antes de editar (`layout.clone`, `mod.clone`), rode `herdr-app check` depois
 de mexer num mod e confirme o resultado com `herdr-app status` e
 `herdr-app shot`.
+
+### Preferência de painel ou aba
+
+Quando a pessoa fixar onde quer os terminais novos ("sempre em aba",
+"sempre na mesma aba"), ofereça gravar a preferência. O localizador lê o
+arquivo e devolve a escolha em `preference` e em `advice`:
+
+```bash
+mkdir -p ~/.config/herdrfy
+printf '{"open":"tab"}\n' > ~/.config/herdrfy/config.json
+```
+
+| `open` | Efeito |
+| --- | --- |
+| `auto` | padrão: o tamanho do painel e a ocupação da aba decidem |
+| `pane` | painel na aba de quem pediu, sempre que houver aba para repetir |
+| `tab` | aba nova no espaço ou workspace de quem pediu |
+
+Com `XDG_CONFIG_HOME` definido, a pasta é `$XDG_CONFIG_HOME/herdrfy`.
+`HERDRFY_CONFIG` aponta outro arquivo. Um pedido da pessoa numa tarefa vale
+mais que a preferência gravada. No Desktop, um terminal sem rótulos de aba
+continua abrindo auxiliares, qualquer que seja a preferência.
 
 ## 6. Instruções do projeto
 

@@ -48,10 +48,36 @@
  *   Desktop: { surface: "desktop", found, cli: "hc", window: { cli,
  *     available }, terminal: { id, name, where, space, tab, placement,
  *     identity, cwd, program, state, status, parent }, neighbors: [...],
- *     detection, mismatch? }
- *   TUI: { surface: "tui", found, cli: "herdr", workspace, tab, pane,
- *     envCurrent, method, workspaces: [...], detection, mismatch? }
- *   Outside Herdr: { surface: null, found: false, detection }
+ *     ...common }
+ *   TUI: { surface: "tui", found, cli: "herdr", workspace, tab: { id, label,
+ *     panes }, pane: { id, cwd, agent, size: { width, height } | null },
+ *     neighbors: [{ id, agent, status, cwd }], envCurrent, method,
+ *     workspaces: [...], ...common }
+ *   Command missing: { surface, found: false, missing: "hc" | "herdr",
+ *     install: [...], ...common }
+ *   Outside Herdr: { surface: null, found: false, install?: [...], ...common }
+ *
+ * Common keys:
+ *   installed   { herdr, hc, herdrApp }: which binaries are on PATH
+ *   install     [{ product: "tui" | "desktop" | "core", command }]: official
+ *               install commands for this platform; only when the needed
+ *               command is missing (or no Herdr binary exists at all)
+ *   agent       { name, source: "process" | "herdr" | "env" | null, pid,
+ *               permissions }: the coding agent this script runs under, from
+ *               the nearest known agent in the process tree, then the program
+ *               Herdr reports, then CLAUDECODE=1; `permissions` tells whether
+ *               its command line carries the flag that skips approvals
+ *   preference  { open: "auto" | "pane" | "tab", file, exists, error? }: read
+ *               from HERDRFY_CONFIG or $XDG_CONFIG_HOME/herdrfy/config.json
+ *               (~/.config/herdrfy/config.json)
+ *   advice      { open: "pane" | "tab" | "auxiliary" | null, direction:
+ *               "right" | "down" | null, reason, source: "preference" |
+ *               "layout" | "placement" }: where the next terminal should open
+ *               when the person did not say. TUI: split while both halves keep
+ *               80 columns or 20 rows and the tab has fewer than 4 panes, else
+ *               a new tab. Desktop: pane while the tab shows fewer than 3
+ *               terminals, else a new tab; auxiliary without tab labels.
+ *   detection, mismatch?: see below
  *
  * The `detection` object appears in every answer:
  *   process       surface given by the process tree: "desktop", "tui" or null
@@ -78,7 +104,8 @@
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { homedir } from "node:os";
+import { basename, delimiter, join } from "node:path";
 
 /** Root of the process table; `HERDRFY_PROC_ROOT` lets the tests replace it. */
 const PROC_ROOT = process.env.HERDRFY_PROC_ROOT || "/proc";
@@ -92,6 +119,52 @@ const SURFACE_BY_PROCESS = { "herdr-core": "desktop", herdr: "tui" };
 /** Position variables of a Herdr TUI, in the order the answer lists them. */
 // HERDR_SOCKET_PATH is the one that routes the `herdr` CLI to the TUI server.
 const TUI_VARIABLES = ["HERDR_ENV", "HERDR_SOCKET_PATH", "HERDR_PANE_ID", "HERDR_WORKSPACE_ID", "HERDR_TAB_ID"];
+
+/**
+ * Coding agents recognized in the process tree, each with the command-line
+ * flags that skip approvals (empty when not checked for that agent).
+ */
+const KNOWN_AGENTS = {
+  claude: ["--dangerously-skip-permissions"],
+  codex: ["--yolo", "--dangerously-bypass-approvals-and-sandbox"],
+  opencode: ["--auto"],
+  gemini: ["--yolo"],
+  copilot: ["--allow-all"],
+  kimi: ["--auto"],
+  hermes: ["--yolo"],
+  goose: [],
+  omp: [],
+  "cursor-agent": [],
+};
+
+/** Smallest pane that keeps an agent readable, in columns and rows. */
+const MIN_COLS = 80;
+const MIN_ROWS = 20;
+
+/** A tab with this many panes (TUI) or terminals (Desktop) gets a new tab instead. */
+const TUI_MAX_PANES = 4;
+const DESKTOP_MAX_PANES = 3;
+
+/** Official install commands, from the install pages of each product. */
+const INSTALL = {
+  linux: [
+    { product: "tui", command: "curl -fsSL https://herdr.dev/install.sh | sh" },
+    { product: "desktop", command: "curl -fsSL https://releases.herdr.dev/app/install.sh | sh" },
+    { product: "core", command: "curl -fsSL https://releases.herdr.dev/core/install.sh | sh" },
+  ],
+  darwin: [
+    { product: "tui", command: "curl -fsSL https://herdr.dev/install.sh | sh" },
+    { product: "tui", command: "brew install herdr" },
+    { product: "desktop", command: "curl -fsSL https://releases.herdr.dev/app/install.sh | sh" },
+    { product: "desktop", command: "brew install --cask herdr-app" },
+    { product: "core", command: "curl -fsSL https://releases.herdr.dev/core/install.sh | sh" },
+  ],
+  win32: [
+    { product: "tui", command: 'powershell -ExecutionPolicy Bypass -c "irm https://herdr.dev/install.ps1 | iex"' },
+    { product: "desktop", command: "irm https://releases.herdr.dev/app/install.ps1 | iex" },
+    { product: "core", command: 'powershell -c "irm https://releases.herdr.dev/core/install.ps1 | iex"' },
+  ],
+};
 
 const USAGE = `Usage: node where.mjs [--surface desktop|tui] [--json]
 
@@ -247,6 +320,128 @@ function inheritedEnv(surface) {
   return [];
 }
 
+/** Reads the argument list of a process; empty when unreadable. */
+function readArgv(pid) {
+  try {
+    return readFileSync(join(PROC_ROOT, String(pid), "cmdline"), "utf8").split("\0").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** Returns the known agent a process runs, or null. Node and Bun wrappers name the agent in argv[1]. */
+function agentOfProcess(proc) {
+  const argv = readArgv(proc.pid);
+  const base = (path) => (path ? basename(path).replace(/^\./u, "") : "");
+  const candidates = [proc.name, base(argv[0])];
+  if (["node", "bun"].includes(proc.name) || ["node", "bun"].includes(base(argv[0]))) candidates.push(base(argv[1]));
+  const name = candidates.map((c) => c.replace(/^\./u, "")).find((c) => KNOWN_AGENTS[c]);
+  return name ? { name, argv } : null;
+}
+
+/**
+ * Finds the coding agent this script runs under: the nearest ancestor that is
+ * a known agent, stopping at the Herdr host. Falls back to what Herdr reports
+ * for the terminal or pane, then to `CLAUDECODE=1`, which Claude Code sets.
+ * `permissions` tells whether the agent's command line carries the flag that
+ * skips approvals (null when the command line is unknown).
+ */
+function detectAgent(reported) {
+  let current = readProcess(START_PID);
+  while (current && current.ppid > 1) {
+    const parent = readProcess(current.ppid);
+    if (!parent || SURFACE_BY_PROCESS[parent.name]) break;
+    const found = agentOfProcess(parent);
+    if (found) {
+      const flags = KNOWN_AGENTS[found.name];
+      const permissions = flags.length === 0 ? null : found.argv.some((arg) => flags.includes(arg));
+      return { name: found.name, source: "process", pid: parent.pid, permissions };
+    }
+    current = parent;
+  }
+  const fromHerdr = normalizeAgent(reported);
+  if (fromHerdr) return { name: fromHerdr, source: "herdr", pid: null, permissions: null };
+  if (process.env.CLAUDECODE === "1") return { name: "claude", source: "env", pid: null, permissions: null };
+  return { name: null, source: null, pid: null, permissions: null };
+}
+
+/** Maps the program names Herdr reports ("claude-code") to the agent names used here. */
+function normalizeAgent(program) {
+  if (!program) return null;
+  const name = String(program).toLowerCase().replace(/-code$/u, "").replace(/-cli$/u, "");
+  return KNOWN_AGENTS[name] ? name : null;
+}
+
+/** Tells which Herdr binaries are on PATH. */
+function installedBinaries() {
+  return { herdr: onPath("herdr"), hc: onPath("hc"), herdrApp: onPath("herdr-app") };
+}
+
+/** Official install commands for this platform, optionally only for some products. */
+function installCommands(products = ["tui", "desktop", "core"]) {
+  const table = INSTALL[process.platform === "win32" ? "win32" : process.platform === "darwin" ? "darwin" : "linux"];
+  return table.filter((item) => products.includes(item.product));
+}
+
+/**
+ * Reads the person's placement preference from the herdrfy config file:
+ * `{ "open": "auto" | "pane" | "tab" }`. A missing file means "auto".
+ */
+function readPreference() {
+  const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
+  const file = process.env.HERDRFY_CONFIG || join(base, "herdrfy", "config.json");
+  if (!existsSync(file)) return { open: "auto", file, exists: false };
+  try {
+    const open = JSON.parse(readFileSync(file, "utf8")).open ?? "auto";
+    if (!["auto", "pane", "tab"].includes(open)) return { open: "auto", file, exists: true, error: `invalid open value: ${open}` };
+    return { open, file, exists: true };
+  } catch (error) {
+    return { open: "auto", file, exists: true, error: error instanceof Error ? error.message.split("\n")[0] : String(error) };
+  }
+}
+
+/**
+ * Says where the next terminal should open: "pane" in the requester's tab,
+ * a new "tab", an "auxiliary" terminal without a pane (Desktop), or null when
+ * the agent has no pane to work from. The person's explicit word in the
+ * request always wins over this advice.
+ */
+function advise(data, preference) {
+  const result = (open, direction, reason, source) => ({ open, direction, reason, source });
+  if (data.surface === "desktop") {
+    if (!data.found) return result("auxiliary", null, "this process is not a core terminal; open terminals by address", "placement");
+    if (data.terminal.placement !== "tab") return result("auxiliary", null, "this terminal has no tab labels to repeat; a visible tab needs a new space, so ask first", "placement");
+    if (preference.open !== "auto") return result(preference.open, null, `the person's preference in ${preference.file}`, "preference");
+    const count = data.neighbors.length + 1;
+    if (count >= DESKTOP_MAX_PANES) return result("tab", null, `this tab already shows ${count} terminals; one more pane would be too narrow to read`, "layout");
+    return result("pane", null, `this tab shows ${count} terminal(s); the window places the new pane`, "layout");
+  }
+  if (data.surface === "tui") {
+    if (!data.found) return result(null, null, "no pane of this session hosts this agent; ask before opening anything", "placement");
+    if (preference.open !== "auto") return result(preference.open, preference.open === "pane" ? splitDirection(data) : null, `the person's preference in ${preference.file}`, "preference");
+    const size = data.pane.size;
+    if (data.tab.panes >= TUI_MAX_PANES) return result("tab", null, `this tab already has ${data.tab.panes} panes`, "layout");
+    if (!size) return result("pane", "right", "pane size unknown; split to the right and read the result", "layout");
+    const direction = splitDirection(data);
+    if (direction) return result("pane", direction, `the pane is ${size.width}x${size.height}; both halves stay readable`, "layout");
+    return result("tab", null, `the pane is ${size.width}x${size.height}; a split would leave less than ${MIN_COLS} columns or ${MIN_ROWS} rows`, "layout");
+  }
+  return result(null, null, "outside Herdr", "placement");
+}
+
+/**
+ * Picks the split that keeps both halves readable: right when wide enough,
+ * else down, else null. Herdr splits a pane into two exact halves (120
+ * columns become 60 and 60), so each half is the size divided by two.
+ */
+function splitDirection(data) {
+  const size = data.pane.size;
+  if (!size) return "right";
+  if (Math.floor(size.width / 2) >= MIN_COLS) return "right";
+  if (Math.floor(size.height / 2) >= MIN_ROWS) return "down";
+  return null;
+}
+
 /** Walks up to the Herdr server and returns its direct child shell. */
 function paneShell() {
   let current = readProcess(START_PID);
@@ -291,17 +486,34 @@ function locateOnTui(processSurfaceName) {
   if (!pane) {
     // This process does not run in a pane of this TUI session. The workspace
     // list lets the agent work with explicit IDs, without `--current`.
-    return { surface: "tui", found: false, cli: "herdr", workspace: null, tab: null, pane: null, envCurrent: false, method: null, workspaces: workspaceSummary };
+    return { surface: "tui", found: false, cli: "herdr", workspace: null, tab: null, pane: null, neighbors: [], envCurrent: false, method: null, workspaces: workspaceSummary };
   }
   const workspace = workspaces.find((w) => w.workspace_id === pane.workspace_id);
   const tab = herdr("tab", "list", "--workspace", pane.workspace_id).tabs.find((t) => t.tab_id === pane.tab_id);
+  // Geometry is optional: older servers or a failed call leave it unknown.
+  let layout = null;
+  try {
+    layout = herdr("pane", "layout", "--pane", pane.pane_id).layout;
+  } catch {
+    layout = null;
+  }
+  const rect = layout?.panes?.find((p) => p.pane_id === pane.pane_id)?.rect;
+  const inTab = panes.filter((p) => p.tab_id === pane.tab_id);
   return {
     surface: "tui",
     found: true,
     cli: "herdr",
     workspace: { id: pane.workspace_id, label: workspace?.label ?? null },
-    tab: { id: pane.tab_id, label: tab?.label ?? null },
-    pane: { id: pane.pane_id, cwd: pane.foreground_cwd ?? pane.cwd ?? null, agent: pane.agent ?? null },
+    tab: { id: pane.tab_id, label: tab?.label ?? null, panes: layout?.panes?.length ?? inTab.length },
+    pane: {
+      id: pane.pane_id,
+      cwd: pane.foreground_cwd ?? pane.cwd ?? null,
+      agent: pane.agent ?? null,
+      size: rect ? { width: rect.width, height: rect.height } : null,
+    },
+    neighbors: inTab
+      .filter((p) => p.pane_id !== pane.pane_id)
+      .map((p) => ({ id: p.pane_id, agent: p.agent ?? null, status: p.agent_status ?? null, cwd: p.foreground_cwd ?? p.cwd ?? null })),
     envCurrent: envPane === pane.pane_id,
     method,
     workspaces: workspaceSummary,
@@ -345,8 +557,10 @@ function printTui(data) {
   }
   console.log(`Workspace: ${data.workspace.label} (${data.workspace.id})`);
   console.log(`Tab:       ${data.tab.label ?? "unnamed"} (${data.tab.id})`);
-  console.log(`Pane:      ${data.pane.id}${data.pane.agent ? ` running ${data.pane.agent}` : ""}`);
+  const size = data.pane.size ? `, ${data.pane.size.width}x${data.pane.size.height}` : "";
+  console.log(`Pane:      ${data.pane.id}${data.pane.agent ? ` running ${data.pane.agent}` : ""}${size}; ${data.tab.panes} pane(s) in this tab`);
   console.log(`Folder:    ${data.pane.cwd}`);
+  for (const n of data.neighbors) console.log(`Neighbor:  ${n.id}${n.agent ? ` ${n.agent}` : ""}${n.status && n.status !== "unknown" ? ` (${n.status})` : ""}`);
   if (!data.envCurrent) console.log(`Warning: HERDR_PANE_ID=${process.env.HERDR_PANE_ID ?? "empty"} is stale; use ${data.pane.id}.`);
   if (data.method === "env") console.log("Warning: position taken from the environment variables, not checked against the processes.");
 }
@@ -380,9 +594,29 @@ function print(data, json) {
     console.log(`Warning:   this process runs under ${other}, not under Herdr ${data.surface === "desktop" ? "Desktop" : "TUI"}; the commands of this surface do not reach where this agent runs.`);
   }
   printInherited(data);
-  if (!data.surface) console.log("Outside Herdr: this agent runs neither in a herdr-core terminal nor in a Herdr TUI pane.");
-  else if (data.surface === "desktop") printDesktop(data);
+  if (data.missing) {
+    console.log(`Not installed: ${data.missing} is not on PATH, so Herdr ${data.surface === "desktop" ? "Desktop" : "TUI"} cannot be read from here.`);
+  } else if (!data.surface) {
+    console.log("Outside Herdr: this agent runs neither in a herdr-core terminal nor in a Herdr TUI pane.");
+    const names = Object.entries({ herdr: data.installed.herdr, hc: data.installed.hc, "herdr-app": data.installed.herdrApp })
+      .filter(([, present]) => present)
+      .map(([name]) => name);
+    console.log(names.length > 0 ? `Installed: ${names.join(", ")}` : "Not installed: no Herdr binary on this machine.");
+  } else if (data.surface === "desktop") printDesktop(data);
   else printTui(data);
+  if (data.install) {
+    console.log("Install (ask the person first):");
+    for (const item of data.install) console.log(`  ${item.product.padEnd(8)}${item.command}`);
+  }
+  if (data.agent.name) {
+    const flags = data.agent.permissions === true ? ", permissions skipped" : data.agent.permissions === false ? ", WITHOUT the permission flag" : "";
+    console.log(`Agent:     ${data.agent.name} (from ${data.agent.source}${flags})`);
+  }
+  if (data.preference.error) console.log(`Warning:   ignored ${data.preference.file}: ${data.preference.error}`);
+  if (data.advice.open) {
+    const what = data.advice.open === "pane" ? `a pane${data.advice.direction ? ` to the ${data.advice.direction === "down" ? "bottom" : "right"}` : ""} in this tab` : data.advice.open === "tab" ? "a new tab" : "an auxiliary terminal, without a pane";
+    console.log(`Next:      ${what}; ${data.advice.reason}. The person's words win.`);
+  }
 }
 
 const options = parseArgs(process.argv.slice(2));
@@ -397,12 +631,25 @@ try {
     inheritedEnv: inheritedEnv(fromProcess ?? surface),
   };
   const mismatch = Boolean(options.surface && fromProcess && options.surface !== fromProcess);
+  const installed = installedBinaries();
   let data;
-  if (surface === "desktop") data = locateOnDesktop();
+  if (surface === "desktop" && !installed.hc) {
+    data = { surface, found: false, missing: "hc", install: installCommands(["desktop", "core"]) };
+  } else if (surface === "tui" && !installed.herdr) {
+    data = { surface, found: false, missing: "herdr", install: installCommands(["tui"]) };
+  } else if (surface === "desktop") data = locateOnDesktop();
   else if (surface === "tui") data = locateOnTui(fromProcess);
-  else data = { surface: null, found: false };
+  else {
+    data = { surface: null, found: false };
+    if (!installed.herdr && !installed.hc) data.install = installCommands();
+  }
+  data.installed = installed;
   data.detection = detection;
   if (mismatch) data.mismatch = true;
+  data.agent = detectAgent(data.terminal?.program ?? data.pane?.agent);
+  const preference = readPreference();
+  data.preference = preference;
+  data.advice = data.missing ? { open: null, direction: null, reason: `${data.missing} is not installed`, source: "placement" } : advise(data, preference);
   print(data, options.json);
 } catch (error) {
   const detail = error instanceof Error ? error.message.split("\n")[0] : String(error);

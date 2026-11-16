@@ -1,6 +1,6 @@
 ---
 name: herdrfy
-description: Orquestra o Herdr e os agentes de código nas duas superfícies, Herdr TUI (comando herdr) e Herdr Desktop com herdr-core (comandos hc e herdr-app). Use quando a pessoa pedir para configurar o Herdr, localizar o agente nas janelas, abrir painéis, abas, espaços ou workspaces, iniciar agentes Claude Code, Codex ou OpenCode com as permissões liberadas, enviar tarefas, ler a tela de outro agente, esperar resultados, rodar comandos demorados ou em outra máquina pelo herdr-core, limpar terminais ou gravar as instruções do Herdr no AGENTS.md e no CLAUDE.md.
+description: Orquestra o Herdr e os agentes de código nas duas superfícies, Herdr TUI (comando herdr) e Herdr Desktop com herdr-core (comandos hc e herdr-app). Use quando a pessoa citar Herdr, herdr-core, hc ou Herdr Desktop; quando pedir para abrir painel, aba, espaço ou workspace, dividir a tela, ou chamar, delegar ou rodar em paralelo outro agente (Claude Code, Codex, OpenCode, subagente) num ambiente com HERDR_ENV ou HC_TERMINAL_ID; quando pedir para ler a tela de outro agente, enviar tarefa, esperar resultado, rodar comando demorado ou em outra máquina num terminal separado, ou limpar terminais; e quando pedir para instalar, atualizar ou configurar o Herdr, ou gravar as instruções do Herdr no AGENTS.md e no CLAUDE.md. Também avisa quando o Herdr não está instalado e oferece os comandos oficiais de instalação.
 ---
 
 # Herdrfy
@@ -75,12 +75,18 @@ arquivos; qualquer um serve.
    dentro do TUI: mostre à pessoa a linha `Fix:` do localizador, que sugere
    `hc server restart --fresh` num terminal fora do Herdr, e deixe que ela
    rode.
-4. **Painel novo na aba de quem pediu.** Antes de criar aba, painel ou
-   espaço, confira `detection` e `mismatch` no localizador. Todo painel novo
-   abre na mesma aba do agente que recebeu o pedido. Aba, espaço ou
-   workspace novo só quando a pessoa pedir com essas palavras. No Desktop,
-   repita no terminal novo os rótulos `herdr.space` e `herdr.tab` do seu
-   terminal. No TUI, divida o seu painel.
+4. **Painel, aba ou auxiliar: a pessoa decide, depois o `advice`.** Antes de
+   abrir qualquer coisa, confira `detection` e `mismatch` no localizador.
+   Quando a pessoa disser onde ("ao lado", "embaixo", "numa aba nova",
+   "em outro espaço"), faça assim. Sem essa indicação, siga o campo
+   `advice` da resposta: `pane` abre na aba de quem pediu, na direção de
+   `advice.direction` no TUI; `tab` abre uma aba nova no mesmo espaço ou
+   workspace, porque a aba atual não comporta outro painel legível ou
+   porque a preferência da pessoa pede aba; `auxiliary` abre no Desktop um
+   terminal sem painel. Ao abrir aba por causa do `advice`, diga o motivo
+   (`advice.reason`) no relato. Espaço ou workspace novo, só a pedido. No
+   Desktop, painel na sua aba repete os rótulos `herdr.space` e
+   `herdr.tab` do seu terminal; no TUI, divida o seu painel.
 5. **Sem aba, sem rótulo inventado.** Quando o localizador responder
    `placement` diferente de `tab`, o seu terminal não tem aba para repetir.
    Abra o terminal novo sem rótulos, como auxiliar, e diga isso à pessoa
@@ -118,6 +124,9 @@ arquivos; qualquer um serve.
 
 ### 1. Localizar
 
+Rode no início da sessão, antes de qualquer comando do Herdr, sempre que a
+skill for acionada.
+
 ```bash
 node <skill>/scripts/where.mjs                     # detecta a superfície
 node <skill>/scripts/where.mjs --surface desktop   # ou tui, quando a pessoa informou
@@ -129,8 +138,17 @@ Guarde da resposta: no Desktop, o endereço do terminal (`t1s`), o espaço
 na máquina; no TUI, o workspace (`w1`), a aba (`w1:t1`) e o painel
 (`w1:p1`). Com `found: false`, o agente não roda dentro daquela superfície:
 opere por IDs explícitos da lista devolvida e avise a pessoa antes de abrir
-qualquer coisa. Detalhes em
+qualquer coisa. Guarde também `advice` (onde abrir o próximo terminal) e
+`agent` (quem é você e se subiu com a flag de permissão). Detalhes em
 [references/superficies.md](references/superficies.md).
+
+Herdr ausente: a resposta traz `Not installed` e a lista `install` com os
+comandos oficiais para o sistema da pessoa. Diga que o Herdr não está
+instalado, mostre os comandos da superfície que ela quer usar e rode só com
+o aceite dela. Depois da instalação, o agente precisa rodar dentro do Herdr
+para usar painéis e abas: a pessoa abre o `herdr` ou o Herdr Desktop e
+inicia o agente ali. Até lá, siga o pedido sem o Herdr, se ele não depender
+disso.
 
 ### 2. Conferir a instalação, quando o pedido for configurar
 
@@ -146,7 +164,8 @@ confirmação dela, salvo quando o pedido já for esse.
 
 ### 3. Abrir o lugar do trabalho
 
-Painel na aba de quem pediu, com um shell:
+Abra onde a pessoa disse ou, sem indicação, onde `advice.open` aponta
+(regra 4). Painel na aba de quem pediu, com um shell:
 
 ```bash
 # Desktop, placement "tab": mesmos rótulos do seu terminal
@@ -156,12 +175,14 @@ hc run --bg --name <nome> --cwd "$PWD" \
 # Desktop, placement "unlabeled" ou "none": auxiliar sem rótulos (regra 5)
 hc run --bg --name <nome> --cwd "$PWD"
 
-# TUI: divide o seu painel sem tirar o foco
-herdr pane split <seu-painel> --direction right --cwd "$PWD" --no-focus
+# TUI: divide o seu painel na direção de advice.direction, sem tirar o foco
+herdr pane split <seu-painel> --direction <right|down> --cwd "$PWD" --no-focus
 ```
 
-Aba, espaço e workspace novos, só a pedido, estão em
-[references/desktop.md](references/desktop.md) e
+Com `advice.open: "tab"`, a aba nova fica no espaço ou workspace de quem
+pediu: no Desktop, um `herdr.tab` novo com o seu `herdr.space`; no TUI,
+`herdr tab create --workspace <seu-workspace> --no-focus`. Os comandos estão
+em [references/desktop.md](references/desktop.md) e
 [references/tui.md](references/tui.md).
 
 ### 4. Iniciar o agente com as permissões liberadas
@@ -247,8 +268,8 @@ do arquivo. Detalhes em [references/instrucoes.md](references/instrucoes.md).
 
 - Superfície e posição confirmadas pelo localizador, com a palavra da pessoa
   quando ela informou.
-- Cada painel novo na aba de quem pediu, salvo pedido de aba ou espaço novo,
-  ou auxiliar sem rótulos quando o terminal não tem aba.
+- Cada terminal novo onde a pessoa disse ou onde `advice` apontou, com o
+  motivo dito à pessoa quando virou aba nova.
 - Cada agente iniciado pelo comando completo com as flags de permissão,
   conferido em `hc get <t>` (campos `argv` e `foreground.argv`) ou em
   `herdr pane process-info --pane <id>`.
@@ -262,6 +283,8 @@ Ao terminar, informe em poucas linhas:
 
 - a superfície e a posição usadas (terminal, espaço e aba, ou workspace, aba
   e painel);
+- quando o Herdr não estava instalado, os comandos oferecidos e o que a
+  pessoa escolheu;
 - o que foi aberto, com nome, endereço e comando de cada agente, e se ficou
   em painel ou como auxiliar sem painel;
 - o resultado de cada agente, com o caminho do arquivo quando houver;

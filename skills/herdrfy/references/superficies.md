@@ -174,8 +174,9 @@ usa para encaixar painéis. Não invente os rótulos a partir do texto de
   "found": true,
   "cli": "herdr",
   "workspace": { "id": "w1", "label": "api" },
-  "tab": { "id": "w1:t2", "label": "agentes" },
-  "pane": { "id": "w1:p5", "cwd": "/home/ana/api", "agent": "claude" },
+  "tab": { "id": "w1:t2", "label": "agentes", "panes": 2 },
+  "pane": { "id": "w1:p5", "cwd": "/home/ana/api", "agent": "claude", "size": { "width": 200, "height": 50 } },
+  "neighbors": [{ "id": "w1:p6", "agent": "codex", "status": "idle", "cwd": "/home/ana/api" }],
   "envCurrent": true,
   "method": "processes",
   "workspaces": [{ "id": "w1", "label": "api", "tabs": 2, "panes": 4 }],
@@ -201,6 +202,59 @@ usa para encaixar painéis. Não invente os rótulos a partir do texto de
   só com IDs explícitos lidos de `workspaces`, `herdr pane list` e
   `herdr agent list`, sem `--current`, e diga isso à pessoa antes de abrir
   painéis.
+
+- `pane.size` é a largura e a altura do seu painel, em colunas e linhas;
+  `null` quando o servidor não informou. `tab.panes` conta os painéis da
+  aba, e `neighbors` lista os outros painéis dela, com o agente e o estado.
+
+## Campos comuns às duas superfícies
+
+```json
+"installed": { "herdr": true, "hc": true, "herdrApp": false },
+"agent": { "name": "claude", "source": "process", "pid": 4120, "permissions": true },
+"preference": { "open": "auto", "file": "/home/ana/.config/herdrfy/config.json", "exists": false },
+"advice": { "open": "pane", "direction": "right", "reason": "the pane is 200x50; both halves stay readable", "source": "layout" }
+```
+
+- `installed` diz quais binários estão no PATH: `herdr`, `hc` e
+  `herdr-app`.
+- `install` só aparece quando falta o comando da superfície (com
+  `missing: "hc"` ou `missing: "herdr"`) ou quando nenhum binário do Herdr
+  existe. Traz os comandos oficiais para o sistema da pessoa, um por produto
+  (`tui`, `desktop`, `core`). Mostre à pessoa e rode só com o aceite dela.
+- `agent` é o agente que roda o localizador: o agente conhecido mais
+  próximo na árvore de processos (`source: "process"`), o programa que o
+  Herdr informa para o terminal ou o painel (`"herdr"`) ou
+  `CLAUDECODE=1` (`"env"`). `permissions: true` confirma a flag que
+  dispensa aprovações na linha de comando dele; `false` mostra que ele
+  subiu sem a flag, e vale avisar a pessoa; `null`, que não deu para
+  conferir.
+- `preference` é a preferência gravada pela pessoa (ver
+  [configuracao.md](configuracao.md#preferência-de-painel-ou-aba)):
+  `auto`, `pane` ou `tab`. Um arquivo inválido vira `auto` com
+  `error`.
+- `advice` diz onde abrir o próximo terminal quando a pessoa não disse.
+  A palavra dela vale mais que o `advice`.
+
+### Como o `advice` é calculado
+
+| Situação | `advice.open` |
+| --- | --- |
+| Desktop sem terminal do core, ou com `placement` diferente de `tab` | `auxiliary` |
+| Preferência `pane` ou `tab` gravada | o valor da preferência |
+| TUI com 4 painéis ou mais na aba | `tab` |
+| TUI com metade da largura em 80 colunas ou mais | `pane`, `direction: "right"` |
+| TUI com metade da altura em 20 linhas ou mais | `pane`, `direction: "down"` |
+| TUI com painel menor que isso | `tab` |
+| Desktop com 3 terminais ou mais na aba | `tab` |
+| Desktop com menos de 3 | `pane`; a janela escolhe a posição |
+| TUI sem painel achado, fora do Herdr ou comando ausente | `null`: pergunte antes de abrir |
+
+O Herdr TUI divide um painel em duas metades exatas: 120 colunas viram duas
+de 60. Abaixo de 80 colunas ou de 20 linhas, a tela de um agente quebra em
+linhas curtas e fica difícil de ler; por isso o `advice` troca o painel por
+uma aba. `advice.source` diz de onde veio a recomendação: `preference`,
+`layout` ou `placement`.
 
 ## Depois de mudar de lugar
 

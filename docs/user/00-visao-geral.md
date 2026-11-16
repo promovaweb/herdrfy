@@ -17,10 +17,14 @@ arrumar a casa no final.
 
 1. **Localização.** O agente roda o localizador e descobre a superfície e o
    terminal, a aba e o espaço (ou o painel, a aba e o workspace) onde está.
+   Se o Herdr não estiver instalado, ele avisa e oferece os comandos de
+   instalação do seu sistema.
 2. **Superfície.** Se você disser que está no Herdr TUI ou no Herdr Desktop,
    a sua frase vale mais que a detecção.
-3. **Lugar.** O que ele abrir aparece na mesma aba de onde você deu a
-   instrução. Aba ou espaço novo, só quando você manda.
+3. **Lugar.** O que ele abrir aparece onde você disser. Sem indicação, vai
+   para a mesma aba de onde você deu a instrução, ou para uma aba nova
+   quando a sua não comporta mais um painel legível. Espaço novo, só quando
+   você manda.
 4. **Agentes.** Cada agente é iniciado com as permissões liberadas e recebe
    uma tarefa com escopo escrito.
 5. **Acompanhamento.** O agente espera pelos comandos do Herdr, lê a tela do
