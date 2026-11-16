@@ -18,8 +18,10 @@
  * walks up from this process and takes the nearest ancestor: a process named
  * `herdr-core` means desktop, a process named `herdr` means tui. Only when no
  * such ancestor exists (or there is no `/proc`, as on macOS and Windows) it
- * reads the variables: `HC_TERMINAL_ID` means desktop and wins over
- * `HERDR_ENV=1`, which means tui. Core terminals often inherit `HERDR_ENV=1`
+ * reads the variables: `TERM_PROGRAM=herdr` means tui (Herdr TUI 0.9.2 and
+ * newer set it in each pane; herdr-core overwrites it in its terminals); then
+ * `HC_TERMINAL_ID` means desktop and wins over `HERDR_ENV=1`, which means
+ * tui. Core terminals often inherit `HERDR_ENV=1`
  * and stale IDs from a Herdr TUI that ran before on the same machine, and a
  * TUI started inside a core terminal inherits `HC_TERMINAL_ID`.
  *
@@ -55,6 +57,9 @@
  *   process       surface given by the process tree: "desktop", "tui" or null
  *   env           surface the variables alone would give: "desktop", "tui" or
  *                 null
+ *   termProgram   value of TERM_PROGRAM, or null: "herdr" in a TUI pane, the
+ *                 core's terminal identity (such as "ghostty") in a core
+ *                 terminal
  *   inheritedEnv  variables of the other surface found in the environment:
  *                 HERDR_ENV, HERDR_SOCKET_PATH, HERDR_PANE_ID,
  *                 HERDR_WORKSPACE_ID and HERDR_TAB_ID in a core terminal,
@@ -218,8 +223,14 @@ function processSurface() {
   return null;
 }
 
-/** Returns the surface the environment variables alone indicate. */
+/**
+ * Returns the surface the environment variables alone indicate.
+ * `TERM_PROGRAM=herdr` comes first: Herdr TUI 0.9.2 and newer set it in every
+ * pane, and herdr-core replaces it with its own identity in its terminals, so
+ * it names the nearest host even when the other surface's variables leaked in.
+ */
 function envSurface() {
+  if (process.env.TERM_PROGRAM === "herdr") return "tui";
   if (process.env.HC_TERMINAL_ID) return "desktop";
   if (process.env.HERDR_ENV === "1") return "tui";
   return null;
@@ -350,8 +361,12 @@ function printInherited(data) {
   if (names.length === 0) return;
   const list = names.map((name) => `${name}=${process.env[name]}`).join(", ");
   const base = data.detection.process ?? data.surface;
-  if (base === "desktop") console.log(`Warning:   ${list} came from a Herdr TUI; herdr commands from here reach the TUI, not this window. Use hc.`);
-  else console.log(`Warning:   ${list} came from a herdr-core terminal; hc commands from here reach the core, not this pane. Use herdr.`);
+  if (base === "desktop") {
+    console.log(`Warning:   ${list} came from a Herdr TUI; herdr commands from here reach the TUI, not this window. Use hc.`);
+    // herdr-core 0.1.19+ keeps the environment it started with across updates
+    // and restarts; 0.1.20+ can replace it without ending running programs.
+    console.log("Fix:       the core started inside a Herdr TUI and passes its variables to every new terminal. If the person agrees, they run `hc server restart --fresh` from a terminal outside Herdr; running programs keep going.");
+  } else console.log(`Warning:   ${list} came from a herdr-core terminal; hc commands from here reach the core, not this pane. Use herdr.`);
 }
 
 /** Prints the answer as readable text or as JSON. */
@@ -375,7 +390,12 @@ try {
   const fromProcess = processSurface();
   const fromEnv = envSurface();
   const surface = options.surface ?? fromProcess ?? fromEnv;
-  const detection = { process: fromProcess, env: fromEnv, inheritedEnv: inheritedEnv(fromProcess ?? surface) };
+  const detection = {
+    process: fromProcess,
+    env: fromEnv,
+    termProgram: process.env.TERM_PROGRAM || null,
+    inheritedEnv: inheritedEnv(fromProcess ?? surface),
+  };
   const mismatch = Boolean(options.surface && fromProcess && options.surface !== fromProcess);
   let data;
   if (surface === "desktop") data = locateOnDesktop();

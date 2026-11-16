@@ -31,9 +31,22 @@ Desktop. Foi assim que uma aba solicitada no Desktop acabou aberta no TUI.
 Por isso o agente decide a superfície pela árvore de processos, não pelas
 variáveis. Ele sobe do próprio processo até o ancestral mais próximo:
 processo `herdr-core` é Desktop, processo `herdr` é TUI. As variáveis só
-decidem quando a árvore não tem nenhuma das duas. A resposta do localizador
-mostra os dois lados no objeto `detection` e avisa com `Warning:` quando as
-variáveis da outra superfície estão herdadas.
+decidem quando a árvore não tem nenhuma das duas, como no macOS, que não
+tem a tabela de processos do Linux. Nesse caso, `TERM_PROGRAM=herdr`, que o
+TUI grava em cada painel desde a versão 0.9.2, vem antes das outras. A
+resposta do localizador mostra os dois lados no objeto `detection` e avisa
+com `Warning:` quando as variáveis da outra superfície estão herdadas.
+
+A herança acontece quando o herdr-core foi iniciado de dentro de um painel
+do TUI: ele guarda aquele ambiente e o repassa a todo terminal novo, mesmo
+depois de atualizar. Para limpar, rode num terminal fora do Herdr:
+
+```bash
+hc server restart --fresh
+```
+
+Os programas abertos continuam rodando; os terminais novos já nascem sem
+as variáveis do TUI. O localizador lembra esse comando numa linha `Fix:`.
 
 A sua informação continua valendo mais que qualquer detecção. Quando ela
 contraria a árvore de processos, o localizador mantém a superfície que você

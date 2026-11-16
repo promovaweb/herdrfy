@@ -54,7 +54,8 @@ arquivos; qualquer um serve.
 1. **O localizador detecta, a pessoa confirma.** Rode o localizador sem
    opções: ele decide a superfície pela árvore de processos, do ancestral
    mais próximo para cima, e só usa as variáveis de ambiente quando a árvore
-   não tem `herdr-core` nem `herdr`. Quando a pessoa disser se está no TUI
+   não tem `herdr-core` nem `herdr` (no macOS, sem `/proc`, começa por
+   `TERM_PROGRAM=herdr`, que marca painel do TUI). Quando a pessoa disser se está no TUI
    ou no Desktop, a palavra dela vale mais: passe com `--surface`, confira
    `detection` e `mismatch` na resposta e avise quando a superfície pedida
    não for onde o agente roda. Pergunte uma vez na sessão só quando a
@@ -70,7 +71,10 @@ arquivos; qualquer um serve.
    servidor do TUI e cria a aba ou o painel lá, não na janela onde a pessoa
    está. A árvore de processos vale mais que as variáveis, e o localizador
    informa `detection.process`, `detection.env` e as variáveis herdadas em
-   `detection.inheritedEnv`.
+   `detection.inheritedEnv`. Herança no Desktop vem de um core iniciado
+   dentro do TUI: mostre à pessoa a linha `Fix:` do localizador, que sugere
+   `hc server restart --fresh` num terminal fora do Herdr, e deixe que ela
+   rode.
 4. **Painel novo na aba de quem pediu.** Antes de criar aba, painel ou
    espaço, confira `detection` e `mismatch` no localizador. Todo painel novo
    abre na mesma aba do agente que recebeu o pedido. Aba, espaço ou
@@ -107,7 +111,8 @@ arquivos; qualquer um serve.
     workspaces ou sessões de outra origem. Nunca rode `hc server stop`,
     `hc server restart` ou `herdr server stop` sem pedido explícito.
 12. **Foco fica com a pessoa.** No TUI use `--no-focus`. No Desktop não mude
-    o que a janela mostra sem pedido.
+    o que a janela mostra sem pedido: `herdr-app do tab.new` e `space.new`
+    levam `--focus false`, salvo quando a pessoa pedir para ir até a aba.
 
 ## Passos
 

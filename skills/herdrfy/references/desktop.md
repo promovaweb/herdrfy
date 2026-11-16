@@ -81,15 +81,18 @@ auxiliar sem painel e num core sem janela.
 Com `herdr-app` na máquina:
 
 ```bash
-herdr-app do tab.new --name "logs" --folder /caminho
-herdr-app do tab.new --name "revisão" \
+herdr-app do tab.new --name "logs" --folder /caminho --focus false
+herdr-app do tab.new --name "revisão" --focus false \
   --argv '["codex","--yolo","--no-daemon"]' --task "<tarefa>"
-herdr-app do space.new --name api --folder /caminho/api
-herdr-app do space.new --name "api remota" --machine vps --folder /srv/api
+herdr-app do space.new --name api --folder /caminho/api --focus false
+herdr-app do space.new --name "api remota" --machine vps --folder /srv/api --focus false
 ```
 
-Dê nome a toda aba e a todo espaço novo. O comando responde com os IDs
-criados ou com `{ "error": ... }` e código 1. Confirme com `herdr-app ls`.
+Dê nome a toda aba e a todo espaço novo. `--focus false` (herdr-app 0.1.16)
+cria sem trocar o que a janela mostra: a aba entra por último no espaço e a
+pessoa continua onde estava. Tire a opção só quando ela pedir para ir até a
+aba nova. O comando responde com os IDs criados ou com `{ "error": ... }` e
+código 1. Confirme com `herdr-app ls`.
 
 Sem `herdr-app` (janela em outro computador, ligada a este core), os rótulos
 do `hc` fazem o mesmo trabalho:
@@ -112,8 +115,10 @@ hc run --bg --name <nome> --cwd <pasta> --label herdr.space=$ESPACO [programa]
 - O formato é `tb` ou `sp` seguido de 32 dígitos hexadecimais.
 - A janela reescreve o rótulo `where` com o nome final, por exemplo
   `api / 3`. Leia com `hc get <t>` para saber onde o terminal caiu.
-- Um espaço sem nome leva o nome da pasta do primeiro terminal; uma aba sem
-  nome leva o número. Renomear só pelo `herdr-app`
+- Um espaço sem nome leva o nome da pasta do primeiro terminal. Uma aba sem
+  nome leva o número; a partir do herdr-app 0.1.16, a janela passa a
+  chamá-la pelo programa que roda nela ou, com um agente, pelo título da
+  sessão dele. Releia `where` com `hc get <t>` em vez de supor o nome. Renomear só pelo `herdr-app`
   (`tab.rename`, `space.rename`) ou pela pessoa na janela.
 - Use `--outlive-parent` em abas e espaços que a pessoa pediu para manter.
 - Sem `herdr.space` no seu terminal, a aba nova pede um espaço: crie um

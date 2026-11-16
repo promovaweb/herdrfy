@@ -80,6 +80,9 @@ As flags de cada agente estão em [agentes.md](agentes.md).
   (limite padrão de 30 segundos). Se o agente parar num diálogo, a resposta
   é `agent_not_ready`; o nome continua valendo para `agent read` e
   `agent send-keys`.
+- No macOS, `pane run` e `agent start` recusam um comando longo demais
+  enquanto o shell do painel ainda sobe (0.9.4), em vez de cortá-lo. Inicie
+  o agente sem a tarefa e mande o texto depois, com `agent prompt`.
 - `agent prompt` envia o texto e o Enter como um envio só. Com `--wait`,
   espera o primeiro estado assentado: `idle`, `done` ou `blocked`.
 - `agent_blocked`: o agente já esperava uma resposta; nada foi enviado. Leia
@@ -142,6 +145,7 @@ arquivo Markdown numa pasta temporária e responder só com o caminho.
 herdr session list
 herdr status
 herdr machine list --json
+herdr machine status            # confere as máquinas sem pedir autenticação
 herdr --machine <rótulo> agent list
 herdr --machine <rótulo> agent prompt <nome> "..." --wait --timeout 120000
 ```

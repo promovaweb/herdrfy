@@ -10,7 +10,7 @@ uma superfície.
 | Hierarquia | sessão, workspace, aba, painel | máquina, espaço, aba, painel, terminal |
 | Endereços | `w1`, `w1:t1`, `w1:p1` | terminal `t7` ou `maquina/t7`; espaço `sp<32 hex>`; aba `tb<32 hex>` |
 | Comando de controle | `herdr` | `hc` para terminais e agentes; `herdr-app` para a janela |
-| Sinal no ambiente | `HERDR_ENV=1` | `HC_TERMINAL_ID=<endereço>` |
+| Sinal no ambiente | `HERDR_ENV=1` e `TERM_PROGRAM=herdr` | `HC_TERMINAL_ID=<endereço>` |
 | Estado do agente | detectado pela tela e pelas integrações | informado pelo próprio programa (OSC 7501) |
 | Manual embutido | `herdr --skill` | `hc --skill` e `herdr-app --skill` |
 
@@ -28,14 +28,34 @@ processos e só depois pelas variáveis. A ordem de detecção é:
    mais próximo decide: processo de nome `herdr-core` dá Desktop, processo
    de nome `herdr` dá TUI. O mais próximo vence para cobrir um TUI iniciado
    dentro de um terminal do core e o contrário.
-2. Sem `herdr-core` nem `herdr` na árvore, ou sem `/proc` (macOS e Windows):
+2. Sem `herdr-core` nem `herdr` na árvore, ou sem `/proc` (macOS e Windows),
+   decidem as variáveis, nesta ordem: `TERM_PROGRAM=herdr` dá TUI;
    `HC_TERMINAL_ID` presente dá Desktop e vence `HERDR_ENV=1`, que dá TUI.
+   O Herdr TUI 0.9.2 e mais novos gravam `TERM_PROGRAM=herdr` em cada
+   painel, e o herdr-core troca esse valor pela identidade dele nos seus
+   terminais (`ghostty`, ou `herdr-mobile` num terminal aberto pelo
+   celular). Por isso `TERM_PROGRAM` aponta o hospedeiro mais próximo mesmo
+   quando as variáveis da outra superfície vieram junto.
 3. Nenhum dos dois: fora do Herdr.
 
-As variáveis sozinhas enganam porque um terminal do herdr-core herda
-`HERDR_ENV=1`, `HERDR_WORKSPACE_ID`, `HERDR_TAB_ID` e `HERDR_PANE_ID` de um
-TUI que rodava antes na máquina, e um painel do TUI aberto dentro de um
-terminal do core herda `HC_TERMINAL_ID`.
+As variáveis de posição sozinhas enganam. Um core iniciado de dentro de um
+painel do TUI guarda o ambiente daquele painel e o repassa a todo terminal
+novo: `HERDR_ENV=1`, `HERDR_SOCKET_PATH`, `HERDR_WORKSPACE_ID`,
+`HERDR_TAB_ID` e `HERDR_PANE_ID`. Desde o herdr-core 0.1.19, atualizações e
+`hc server restart` preservam esse ambiente. No sentido contrário, um painel
+do TUI aberto dentro de um terminal do core herda `HC_TERMINAL_ID`.
+
+Para limpar a herança no Desktop, a pessoa roda, num terminal fora do
+Herdr:
+
+```bash
+hc server restart --fresh
+```
+
+O core passa a usar o ambiente desse shell nos terminais novos, sem encerrar
+os programas que rodam (exige herdr-core 0.1.20). Os terminais já abertos
+mantêm o ambiente antigo. É uma reinicialização do core da pessoa: sugira e
+deixe que ela rode, ou rode só com o pedido explícito dela.
 
 A resposta traz o objeto `detection` nas duas superfícies e fora do Herdr:
 
@@ -43,19 +63,23 @@ A resposta traz o objeto `detection` nas duas superfícies e fora do Herdr:
 "detection": {
   "process": "desktop",
   "env": "desktop",
+  "termProgram": "ghostty",
   "inheritedEnv": ["HERDR_ENV", "HERDR_PANE_ID"]
 }
 ```
 
 - `process` é a superfície que a árvore de processos deu, ou `null`.
 - `env` é a superfície que as variáveis dariam sozinhas, ou `null`.
+- `termProgram` repete `TERM_PROGRAM`, ou `null`: `herdr` num painel do
+  TUI, a identidade do core num terminal do Desktop.
 - `inheritedEnv` lista as variáveis da outra superfície presentes no
   ambiente, medidas contra a superfície da árvore de processos:
   `HERDR_ENV`, `HERDR_SOCKET_PATH`, `HERDR_PANE_ID`, `HERDR_WORKSPACE_ID`
   e `HERDR_TAB_ID` num terminal do core, `HC_TERMINAL_ID` e
   `HC_TERMINAL_SOCKET` num painel do TUI. `HERDR_SOCKET_PATH` é a que leva o comando `herdr` até o servidor
   do TUI. Lista vazia quando não há nenhuma. A saída em texto abre com uma linha
-  `Warning:` nesse caso.
+  `Warning:` nesse caso. Num terminal do core, uma linha `Fix:` sugere o
+  `hc server restart --fresh` descrito acima.
 
 Quando a pessoa informar ("estou no TUI", "estou no Desktop"), a palavra dela
 vale mais que a detecção: passe com `--surface`. O script aceita os
@@ -105,7 +129,7 @@ inválido.
     "parent": null
   },
   "neighbors": [{ "id": "t16", "program": "codex", "status": "idle" }],
-  "detection": { "process": "desktop", "env": "desktop", "inheritedEnv": [] }
+  "detection": { "process": "desktop", "env": "desktop", "termProgram": "ghostty", "inheritedEnv": [] }
 }
 ```
 
@@ -118,9 +142,10 @@ inválido.
   terminal.
 - `terminal.placement` resume os três casos de posição, descritos abaixo.
 - `terminal.identity` repete o campo `identity` do `hc get`. No `hc`
-  0.1.19, os terminais da janela trazem `ghostty` e um terminal sem rótulos
-  de aba trouxe `herdr-mobile`. O manual do `hc` não descreve o campo:
-  use-o como pista para o relato, não como regra.
+  0.1.21, os terminais da janela trazem `ghostty` e um terminal aberto pelo
+  celular, sem rótulos de aba, trouxe `herdr-mobile`; o mesmo valor aparece
+  em `TERM_PROGRAM`. O manual do `hc` não descreve o campo: use-o como pista
+  para o relato, não como regra.
 - `neighbors` lista os outros terminais da mesma aba.
 - `window.available` diz se o `herdr-app` existe nesta máquina. Quando a
   janela roda em outro computador, ele não existe aqui e a aba ou o painel
@@ -154,7 +179,7 @@ usa para encaixar painéis. Não invente os rótulos a partir do texto de
   "envCurrent": true,
   "method": "processes",
   "workspaces": [{ "id": "w1", "label": "api", "tabs": 2, "panes": 4 }],
-  "detection": { "process": "tui", "env": "tui", "inheritedEnv": [] }
+  "detection": { "process": "tui", "env": "tui", "termProgram": "herdr", "inheritedEnv": [] }
 }
 ```
 

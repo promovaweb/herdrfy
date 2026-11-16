@@ -29,6 +29,10 @@ flag que libera as permissões. Flags conferidas nas versões atuais:
 | Kimi Code | `kimi --auto` |
 | Hermes | `hermes --yolo` |
 
+O Herdr Desktop 0.1.16 também reconhece Goose, oh-my-pi (`omp`) e o agente
+do Cursor, com ícone e nome próprios. As flags deles não foram conferidas
+aqui: leia o `--help` antes do primeiro lançamento.
+
 Se o `--help` não mostrar uma flag desse tipo, diga isso à pessoa e pergunte
 como ela quer iniciar aquele agente. Não invente flag.
 
@@ -86,7 +90,7 @@ Quando o `herdr-app` existe na máquina e a pessoa pediu aba ou espaço novo,
 o comando vai em JSON:
 
 ```bash
-herdr-app do tab.new --name "revisão" \
+herdr-app do tab.new --name "revisão" --focus false \
   --argv '["claude","--permission-mode=auto","--dangerously-skip-permissions"]' \
   --task "<tarefa>"
 ```

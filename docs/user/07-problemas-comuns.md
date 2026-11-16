@@ -53,7 +53,8 @@ carregar sinais das duas ao mesmo tempo, a sua frase vale mais que a detecção.
 ## Pedi uma aba no Desktop e ela abriu no TUI
 
 Aconteceu porque o terminal do agente carregava `HERDR_ENV=1` e um
-`HERDR_PANE_ID` de um Herdr TUI que rodava antes na máquina. Com o servidor
+`HERDR_PANE_ID` de um Herdr TUI. O herdr-core tinha sido iniciado de dentro
+de um painel do TUI e repassava aquele ambiente a todo terminal novo. Com o servidor
 do TUI no ar, o comando `herdr` do agente funcionou e criou a aba no TUI, não
 na janela do Desktop. O mesmo vale ao contrário: um painel do TUI aberto
 dentro de um terminal do core herda `HC_TERMINAL_ID`.
@@ -65,6 +66,12 @@ O agente agora decide a superfície pela árvore de processos: processo
 variáveis da outra superfície estão herdadas. Quando a superfície que você
 informa contraria a árvore, a resposta traz `mismatch: true` e o aviso de que
 os comandos dela não chegam onde o agente roda.
+
+Para a herança parar, rode num terminal fora do Herdr
+`hc server restart --fresh` (herdr-core 0.1.20 ou mais novo). O core passa
+a usar o ambiente desse shell nos terminais novos, sem encerrar o que está
+rodando. O agente não roda esse comando por conta própria: ele mostra a
+linha `Fix:` do localizador e deixa a escolha com você.
 
 ## O bloco de instruções ficou velho
 

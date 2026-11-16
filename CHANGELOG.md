@@ -3,6 +3,29 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.4.0](https://github.com/promovaweb/herdrfy/compare/v0.3.2...v0.4.0) (2026-11-16)
+
+Revisão contra os changelogs do Herdr TUI 0.9.5, do herdr-core 0.1.21 e do
+Herdr Desktop (herdr-app) 0.1.16. O bloco de instruções não mudou: basta
+atualizar a skill.
+
+### Novidades
+
+- O localizador lê `TERM_PROGRAM` quando a árvore de processos não decide, como no macOS, que não tem `/proc`. `TERM_PROGRAM=herdr`, gravado pelo TUI 0.9.2 e mais novos em cada painel, dá TUI antes de `HC_TERMINAL_ID`; o herdr-core troca esse valor pela identidade dele nos seus terminais. Antes, um painel do TUI aberto dentro de um terminal do core era lido como Desktop nesse caso. Conferido numa sessão real do TUI com a tabela de processos desligada.
+- `detection.termProgram` traz o valor de `TERM_PROGRAM` na resposta em JSON.
+- Num terminal do core com variáveis herdadas do TUI, a saída em texto ganha uma linha `Fix:` que sugere `hc server restart --fresh` (herdr-core 0.1.20), rodado pela pessoa num terminal fora do Herdr. O core guarda o ambiente com que subiu desde a 0.1.19, e era essa a origem das variáveis herdadas.
+
+### Documentação
+
+- `SKILL.md`: a regra 1 cita `TERM_PROGRAM`, a regra 3 manda mostrar a linha `Fix:` à pessoa sem rodar o comando por ela, e a regra 12 pede `--focus false` em `herdr-app do tab.new` e `space.new`.
+- `references/superficies.md`: nova ordem de detecção, a causa da herança e o `hc server restart --fresh`, `termProgram` nos exemplos e `identity` conferida no `hc` 0.1.21.
+- `references/herdr-core.md`, conferido no `hc` 0.1.21: `hc attach --observe`, `hc wait` com `exit` quando um agente trava, o rascunho da pessoa que segura `hc send` e notas, máquinas em `needs_login` e `! stops at logout` (com o `loginctl enable-linger` que a pessoa roda), o ambiente preservado do core e o `hc update` que reinicia um core antigo.
+- `references/configuracao.md`: chave `restore_screen` do herdr-core e reinstalação da integração do Codex depois do TUI 0.9.5, que deixou de gravar ganchos de turno.
+- `references/desktop.md` e `references/agentes.md`: `--focus false` em aba e espaço novos (herdr-app 0.1.16) e o nome que a janela dá a uma aba sem nome.
+- `references/tui.md`: `herdr machine status` e a recusa de comando longo em `pane run` e `agent start` no macOS.
+- `references/agentes.md`: Goose, oh-my-pi e o agente do Cursor, reconhecidos pelo Desktop 0.1.16, com a orientação de ler o `--help` antes.
+- Guia: `02-superficies.md` e `07-problemas-comuns.md` explicam a origem da herança e o `hc server restart --fresh`.
+
 ## [0.3.2](https://github.com/promovaweb/herdrfy/compare/v0.3.1...v0.3.2) (2026-11-13)
 
 ### Documentação

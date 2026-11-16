@@ -8,7 +8,7 @@ mesmos. O `hc` não arruma janelas: espaços, abas e painéis visíveis ficam em
 
 Antes do primeiro comando da sessão, leia o manual da versão instalada com
 `hc --skill`. Para os argumentos exatos, `hc <comando> --help`; a lista de
-comandos sai em `hc --help`. Este arquivo foi conferido no `hc` 0.1.19.
+comandos sai em `hc --help`. Este arquivo foi conferido no `hc` 0.1.21.
 
 ## Conceitos
 
@@ -50,6 +50,7 @@ hc put <t> <arquivo>                # envia um arquivo para a máquina do termin
 hc kill <t>                         # encerra o programa
 hc rm <t>                           # remove o terminal encerrado
 hc attach <t>                       # a pessoa assume; Ctrl+\ solta
+hc attach --observe <t>             # só assiste: não digita nem redimensiona
 hc events --children-of <t>         # acompanha mudanças, uma linha JSON por fato
 ```
 
@@ -130,6 +131,7 @@ não que o terminal encerrou. Um agente parado em `idle` devolve
   ser o diálogo de confiança da pasta (ver [agentes.md](agentes.md)).
 - `not_started` em `send --wait`: o turno não começou. Leia antes de agir.
 - `hc wait <t>` num programa comum espera a saída dele e devolve o código.
+  Num agente que trava ou sai, a resposta é `exit` com o código (0.1.21).
 - `--output X` casa só com texto impresso depois que a espera começou.
 
 Um filho lançado com tarefa conta como trabalhando até o turno dele avançar
@@ -141,6 +143,12 @@ A leitura desses sinais logo depois de lançar um agente está em
 [orquestracao.md](orquestracao.md#confirmar-que-a-tarefa-começou).
 
 ## Mensagens entre agentes
+
+Um `hc send` e as notas ao pai esperam o rascunho que a pessoa estiver
+digitando no terminal de destino: a entrega sai quando ela envia ou apaga o
+texto, ou 60 segundos depois da última tecla (`draft_wait` em
+[configuracao.md](configuracao.md)). Um envio demorado para um terminal onde
+a pessoa escreve não é falha; não reenvie.
 
 O que um filho envia chega marcado:
 
@@ -214,6 +222,14 @@ hc file read --on vps /srv/app/src/x.ts --offset 200 --limit 100
 - `hc machine add`, `login`, `update`, `rename` e `rm` mudam o cadastro de
   máquinas da pessoa: rode só a pedido. `hc machine login` pede senha ou
   código dela.
+- Uma máquina com login SSH recusado aparece como `needs_login` e tenta de
+  novo devagar, até a cada 10 minutos. Avise a pessoa; o `hc machine login`
+  reconecta na hora, mas pede a credencial dela.
+- Uma máquina Linux marcada `! stops at logout` em `hc machine ls` encerra
+  os programas quando o último login SSH fecha. O conserto é um comando
+  único naquela máquina, `sudo loginctl enable-linger -- <usuário>`: mostre
+  à pessoa e deixe que ela rode. No JSON, o campo é
+  `keeps_running_after_logout`.
 
 ## Servidor, atualização e configuração
 
@@ -225,7 +241,16 @@ hc update                           # só a pedido
 
 - Nunca rode `hc server stop` nem `hc server restart` sem pedido: afetam
   todos os terminais.
+- O core guarda o ambiente com que subiu e o repassa aos terminais novos,
+  também depois de `hc update` e `hc server restart`. Um core iniciado de
+  dentro de um painel do TUI espalha `HERDR_ENV=1` e os IDs do TUI. O
+  conserto é `hc server restart --fresh`, rodado pela pessoa num terminal
+  fora do Herdr: os terminais novos recebem o ambiente desse shell e os
+  programas que rodam continuam. O localizador sugere o comando numa linha
+  `Fix:` (ver [superficies.md](superficies.md#quem-define-a-superfície)).
 - `hc update` troca o binário e reinicia o core com os terminais vivos.
+  Também reinicia um core antigo que ainda roda quando o binário já está em
+  dia (`restarted: true` no JSON).
   Instalação feita por gerenciador de pacotes atualiza por ele.
 - `~/.config/herdr-core/config.toml` é opcional (no Windows,
   `%APPDATA%\herdr-core\config.toml`). As chaves estão em

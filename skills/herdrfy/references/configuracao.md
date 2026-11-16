@@ -73,6 +73,12 @@ gancho na pasta de configuração daquele agente; o caminho aparece na saída
 de `integration status`. Agentes já abertos precisam ser reiniciados para
 carregar o gancho.
 
+Depois de `herdr update`, rode `herdr integration status --outdated-only` e
+reinstale o que aparecer. Na 0.9.5, o Herdr deixou de gravar ganchos de
+turno no Codex, que geravam o aviso "clamping Interrupt hook timeout" ao
+abrir, e voltou a ler o estado do Codex pela tela: quem instalou antes roda
+`herdr integration install codex` para tirar o gancho antigo.
+
 ## 4. Templates do herdr-core
 
 Um template guarda o comando de um agente, com as flags, e as instruções de
@@ -147,10 +153,12 @@ O arquivo é opcional. Os comandos do core estão em
 | `wait_timeout = 180` | segundos até uma espera devolver o aviso de tempo |
 | `notes = false` | o core deixa de digitar notas e marcas `<hc>` nos terminais |
 | `notes_quiet = 3` | segundos de silêncio antes de uma nota ao pai |
-| `draft_wait = 60` | segundos que um rascunho da pessoa segura envios e notas |
+| `draft_wait = 60` | segundos que um rascunho da pessoa segura envios e notas; `0` deixa só a pausa curta |
+| `restore_screen = true` | depois de uma recuperação (`keep`), mostra a última tela do programa perdido acima do shell novo; desligado por padrão |
 
 As mudanças valem no próximo terminal ou na próxima entrega, sem reiniciar o
-core. `notes = false` desliga os avisos entre agentes de que a orquestração
+core. Com `restore_screen = true`, `hc read` traz também o texto restaurado,
+abaixo de um divisor: só o texto depois do divisor é saída nova. `notes = false` desliga os avisos entre agentes de que a orquestração
 desta skill depende; só mude a pedido.
 
 ### Herdr Desktop: `~/.config/herdr-app/`

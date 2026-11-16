@@ -33,7 +33,7 @@ const emptyProc = mkdtempSync(join(tmpdir(), "herdrfy-proc-empty-"));
 function cleanEnv(extra = {}) {
   const env = { ...process.env };
   for (const key of Object.keys(env)) {
-    if (key.startsWith("HC_") || key.startsWith("HERDR_") || key.startsWith("HERDRFY_")) delete env[key];
+    if (key.startsWith("HC_") || key.startsWith("HERDR_") || key.startsWith("HERDRFY_") || key === "TERM_PROGRAM") delete env[key];
   }
   return { ...env, HERDRFY_PROC_ROOT: emptyProc, ...extra };
 }
@@ -171,7 +171,7 @@ test("all scripts: an unknown argument exits 2", () => {
 test("where: outside Herdr answers a null surface with code 0", () => {
   const r = run(where, ["--json"], cleanEnv());
   assert.equal(r.code, 0);
-  assert.deepEqual(JSON.parse(r.out), { surface: null, found: false, detection: { process: null, env: null, inheritedEnv: [] } });
+  assert.deepEqual(JSON.parse(r.out), { surface: null, found: false, detection: { process: null, env: null, termProgram: null, inheritedEnv: [] } });
 });
 
 test("where: an invalid or missing surface exits 2", () => {
@@ -277,10 +277,11 @@ test("where: core terminal with inherited TUI variables answers desktop", { skip
   const data = JSON.parse(run(where, ["--json"], env).out);
   assert.equal(data.surface, "desktop");
   assert.equal(data.found, true);
-  assert.deepEqual(data.detection, { process: "desktop", env: "desktop", inheritedEnv: ["HERDR_ENV", "HERDR_PANE_ID"] });
+  assert.deepEqual(data.detection, { process: "desktop", env: "desktop", termProgram: null, inheritedEnv: ["HERDR_ENV", "HERDR_PANE_ID"] });
   const text = run(where, [], env).out;
   assert.match(text, /^Surface: +Herdr Desktop/mu);
   assert.match(text, /^Warning: +HERDR_ENV=1, HERDR_PANE_ID=w0:p1V came from a Herdr TUI/mu);
+  assert.match(text, /^Fix: +.*hc server restart --fresh/mu);
 });
 
 test("where: TUI pane with an inherited HC_TERMINAL_ID answers tui", { skip: !unix }, () => {
@@ -303,7 +304,7 @@ test("where: TUI pane with an inherited HC_TERMINAL_ID answers tui", { skip: !un
   assert.equal(data.surface, "tui");
   assert.equal(data.found, true);
   assert.equal(data.method, "processes");
-  assert.deepEqual(data.detection, { process: "tui", env: "desktop", inheritedEnv: ["HC_TERMINAL_ID"] });
+  assert.deepEqual(data.detection, { process: "tui", env: "desktop", termProgram: null, inheritedEnv: ["HC_TERMINAL_ID"] });
   assert.match(run(where, [], env).out, /^Warning: +HC_TERMINAL_ID=t1 came from a herdr-core terminal/mu);
 });
 
@@ -350,7 +351,38 @@ test("where: without herdr or herdr-core in the tree the variables decide", { sk
   const data = JSON.parse(run(where, ["--json"], env).out);
   assert.equal(data.surface, "tui");
   assert.equal(data.method, "env");
-  assert.deepEqual(data.detection, { process: null, env: "tui", inheritedEnv: [] });
+  assert.deepEqual(data.detection, { process: null, env: "tui", termProgram: null, inheritedEnv: [] });
+});
+
+test("where: without /proc, TERM_PROGRAM=herdr wins over an inherited HC_TERMINAL_ID", { skip: !unix }, () => {
+  const bin = fakeCli("herdr", {
+    "workspace list": { result: { workspaces: [{ workspace_id: "w1", label: "api", tab_count: 1, pane_count: 1 }] } },
+    "pane list": { result: { panes: [{ pane_id: "w1:p5", workspace_id: "w1", tab_id: "w1:t1" }] } },
+    "tab list": { result: { tabs: [{ tab_id: "w1:t1", label: "agents" }] } },
+  });
+  // Empty process table, as on macOS: only the variables can decide.
+  const env = cleanEnv({
+    PATH: `${bin}:/usr/bin:/bin`,
+    HC_TERMINAL_ID: "t1",
+    HERDR_ENV: "1",
+    HERDR_PANE_ID: "w1:p5",
+    TERM_PROGRAM: "herdr",
+  });
+  const data = JSON.parse(run(where, ["--json"], env).out);
+  assert.equal(data.surface, "tui");
+  assert.deepEqual(data.detection, { process: null, env: "tui", termProgram: "herdr", inheritedEnv: ["HC_TERMINAL_ID"] });
+});
+
+test("where: without /proc, a core terminal identity keeps desktop", { skip: !unix }, () => {
+  const bin = fakeCli("hc", {
+    "get t1": { address: "t1", cwd: "/work", labels: {}, state: "live" },
+    ls: { terminals: [{ address: "t1" }] },
+  });
+  const env = cleanEnv({ PATH: `${bin}:/usr/bin:/bin`, HC_TERMINAL_ID: "t1", HERDR_ENV: "1", TERM_PROGRAM: "ghostty" });
+  const data = JSON.parse(run(where, ["--json"], env).out);
+  assert.equal(data.surface, "desktop");
+  assert.equal(data.detection.env, "desktop");
+  assert.equal(data.detection.termProgram, "ghostty");
 });
 
 test("doctor: answers JSON with the expected sections", () => {
