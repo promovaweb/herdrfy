@@ -3,6 +3,10 @@
 Todas as mudanças relevantes do Herdrfy são registradas neste arquivo. O
 projeto segue versionamento semântico.
 
+## [0.5.1] - 2026-11-22
+
+- Documenta a atualização das tarefas do ClickUp para pronto após o commit e publicado após o push.
+
 ## [0.5.0](https://github.com/promovaweb/herdrfy/compare/v0.4.0...v0.5.0) (2026-11-16)
 
 Esta versão muda o texto do bloco de instruções. Depois de atualizar a skill,
