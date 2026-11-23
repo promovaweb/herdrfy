@@ -1,4 +1,9 @@
 {
+  "projectColor": {
+    "name": "Magenta",
+    "hex": "#E0457B",
+    "meaning": "O prompt magenta identifica o terminal que está recebendo comandos dentro do conjunto de painéis."
+  },
   "name": "Herdrfy",
   "families": {
     "primary": {

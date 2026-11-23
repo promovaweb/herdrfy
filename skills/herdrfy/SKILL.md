@@ -77,6 +77,10 @@ arquivos; qualquer um serve.
    rode.
 4. **Painel, aba ou auxiliar: a pessoa decide, depois o `advice`.** Antes de
    abrir qualquer coisa, confira `detection` e `mismatch` no localizador.
+   Com `open: tab`, cada agente recebe sua própria aba nova. O nome da aba
+   de origem identifica o espaço. No Desktop, mantenha `herdr.space` e use um
+   identificador novo para `herdr.tab` a cada lançamento. No TUI, crie uma
+   aba por agente no workspace indicado.
    Quando a pessoa disser onde ("ao lado", "embaixo", "numa aba nova",
    "em outro espaço"), faça assim. Sem essa indicação, siga o campo
    `advice` da resposta: `pane` abre na aba de quem pediu, na direção de

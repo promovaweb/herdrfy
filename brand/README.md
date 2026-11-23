@@ -7,11 +7,7 @@ turquesa da Promovaweb com magenta, cor própria que marca o agente em foco.
 
 ## Conceito visual
 
-O símbolo mostra **painéis em grade**: quatro painéis do Herdr, três em
-contorno turquesa e um preenchido em magenta. O painel em destaque é o agente
-que você está acompanhando, com o cursor de terminal ativo. A composição
-comunica vários terminais vivos ao mesmo tempo e a atenção voltada para um
-deles.
+Janela de terminal com três painéis desiguais e prompt magenta no painel principal. A cor de identificação é `#E0457B`.
 
 ## Arquivos oficiais
 

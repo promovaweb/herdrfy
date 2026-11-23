@@ -23,9 +23,12 @@ antes de controlar terminais, painéis, abas, espaços ou outros agentes.
    `--surface desktop` e confira `mismatch` na resposta. Pergunte uma vez na
    sessão só quando o localizador responder `Outside Herdr` ou a resposta
    contrariar o pedido.
-3. **Onde abrir.** Abra onde a pessoa disser. Sem indicação, siga o
-   `advice` do localizador: painel na aba de quem pediu enquanto couber um
-   painel legível, aba nova no mesmo espaço ou workspace quando não couber.
+3. **Onde abrir agentes.** Respeite a preferência de abertura configurada.
+   Com `open: tab`, cada agente ou subagente recebe uma aba nova no espaço
+   ou workspace indicado. Uma aba informada pelo nome localiza o espaço de
+   origem. Em paralelo, crie uma aba distinta por agente. No Desktop, use
+   um ID novo de `herdr.tab` para cada lançamento e confira o destino com
+   `hc get`. No TUI, use `herdr tab create --workspace <id> --no-focus`.
    Espaço ou workspace novo, só a pedido.
 4. **Agentes com permissões liberadas.** Inicie todo agente pelo comando
    completo, com as flags abaixo, sem alias de shell:
